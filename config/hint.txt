@@ -1,0 +1,5 @@
+IMPORTANT:
+This is only a sample configuration file for the application.
+
+The username, password and token provided in confog.json are not for use in production!
+Please use them only for testing purposes. In production set up your own users and passwords.
