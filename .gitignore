@@ -6,3 +6,4 @@ phpunit.xml
 vendor
 phpstan-quality-report.json
 tests/tmp/db.sqlite
+/var/log/

@@ -1,0 +1,9 @@
+{
+    "db": {
+        "host": "db",
+        "name": "jtl-connector",
+        "username": "jtl-connector",
+        "password": "jtl-connector"
+    },
+    "token": "8ZK4L2QM7X9RBT1A"
+}

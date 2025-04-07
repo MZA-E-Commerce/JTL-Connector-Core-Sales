@@ -1,0 +1,39 @@
+services:
+  nginx:
+    image: nginx:latest
+    container_name: jtl-connector-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+      - ./.docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+
+  php:
+    build:
+      context: ./.docker/php
+    container_name: jtl-connector-php
+    volumes:
+      - ./:/var/www/html
+    expose:
+      - "9000"
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    container_name: jtl-connector-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ROOT
+      MYSQL_DATABASE: jtl-connector
+      MYSQL_USER: jtl-connector
+      MYSQL_PASSWORD: jtl-connector
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+
+volumes:
+  db_data:
