@@ -84,7 +84,7 @@ class Connector implements ConnectorInterface
      */
     public function getControllerNamespace() : string
     {
-        return "Jtl\Connector\Example\Controller";
+        return "Jtl\Connector\Core\Controller";
     }
 
     /**

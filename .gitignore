@@ -7,3 +7,6 @@ vendor
 phpstan-quality-report.json
 tests/tmp/db.sqlite
 /var/log/
+/var/connector.s3db
+/var/connector.s3db-shm
+/var/connector.s3db-wal

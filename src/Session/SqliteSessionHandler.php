@@ -52,6 +52,9 @@ class SqliteSessionHandler implements SessionHandlerInterface, LoggerAwareInterf
         if ($isNew) {
             $this->initializeTables();
         }
+
+        $this->db->exec('PRAGMA journal_mode = DELETE;');
+
     }
 
     /**

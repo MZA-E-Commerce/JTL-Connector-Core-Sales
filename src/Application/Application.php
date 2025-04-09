@@ -83,6 +83,7 @@ use Jtl\Connector\Core\Rpc\RequestPacket;
 use Jtl\Connector\Core\Rpc\ResponsePacket;
 use Jtl\Connector\Core\Rpc\Warnings;
 use Jtl\Connector\Core\Serializer\SerializerBuilder;
+use Jtl\Connector\Core\Session\MySQLSessionHandler;
 use Jtl\Connector\Core\Session\SessionHandlerInterface;
 use Jtl\Connector\Core\Session\SqliteSessionHandler;
 use Jtl\Connector\Core\Subscriber\FeaturesSubscriber;
@@ -149,6 +150,7 @@ class Application
     protected HttpResponse            $httpResponse;
     protected SessionHandlerInterface $sessionHandler;
     protected Serializer              $serializer;
+    private \PDO $pdo;
 
     /**
      * Application constructor.
@@ -244,6 +246,13 @@ class Application
         $this->httpRequest  = HttpRequest::createFromGlobals();
         $this->httpResponse = new HttpResponse($this->eventDispatcher, $this->serializer);
         $this->errorHandler = new ErrorHandler($this->httpResponse);
+
+        $this->pdo = new \PDO(
+            \sprintf(
+                'mysql:host=%s;dbname=%s;charset=utf8mb4',
+                $this->config->get('db.host'),
+                $this->config->get('db.name')
+            ), $this->config->get('db.username'), $this->config->get('db.password'));
     }
 
     /**
@@ -312,13 +321,13 @@ class Application
      */
     public function run(ConnectorInterface $connector): void
     {
-        $jtlrpc = Validate::string($this->httpRequest->get('jtlrpc', ''));
+        $jtlRpc = Validate::string($this->httpRequest->get('jtlrpc', ''));
         $this->httpResponse->setLogger($this->loggerService->get(LoggerService::CHANNEL_RPC));
         $this->eventDispatcher->addSubscriber(new RequestParamsTransformSubscriber());
         $this->eventDispatcher->addSubscriber(new FeaturesSubscriber());
         $this->errorHandler->register();
         MonologErrorHandler::register($this->loggerService->get(LoggerService::CHANNEL_ERROR));
-        $requestPacket = RequestPacket::createFromJtlrpc($jtlrpc, $this->serializer);
+        $requestPacket = RequestPacket::createFromJtlrpc($jtlRpc, $this->serializer);
         $this->errorHandler->setRequestPacket($requestPacket);
         $responsePacket = null;
 
@@ -347,15 +356,15 @@ class Application
             );
             $this->configSchema->validateConfig($this->config);
 
-            $logJtlrpc = $jtlrpc;
+            $logJtlRpc = $jtlRpc;
             if ($requestPacket->getMethod() === RpcMethod::AUTH) {
                 $pattern     = '/\"token\":\s?\"(.*)\"/';
                 $replacement = '"token": "******************"';
-                $logJtlrpc   = \preg_replace($pattern, $replacement, $logJtlrpc);
+                $logJtlRpc   = \preg_replace($pattern, $replacement, $logJtlRpc);
             }
 
             // Log incoming request packet (debug only and configuration must be initialized)
-            $this->loggerService->get(LoggerService::CHANNEL_RPC)->debug(Validate::string($logJtlrpc));
+            $this->loggerService->get(LoggerService::CHANNEL_RPC)->debug(Validate::string($logJtlRpc));
 
             $event = new RpcEvent($requestPacket->getParams(), $method->getController(), $method->getAction());
             $this->eventDispatcher->dispatch($event, Event::createRpcEventName(Event::BEFORE));
@@ -425,6 +434,7 @@ class Application
         }
 
         $sessionHandler = $this->getSessionHandler();
+
         $sessionHandler->setLogger($this->loggerService->get(LoggerService::CHANNEL_SESSION));
 
         \session_name($sessionName);
@@ -457,6 +467,7 @@ class Application
     {
         if (!isset($this->sessionHandler)) {
             $this->sessionHandler = new SqliteSessionHandler(\sprintf('%s/var', $this->connectorDir));
+            #$this->sessionHandler = new MySQLSessionHandler($this->pdo);
             $this->sessionHandler->setLogger($this->loggerService->get(LoggerService::CHANNEL_SESSION));
         }
 
