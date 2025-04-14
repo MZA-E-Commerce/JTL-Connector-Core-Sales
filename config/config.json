@@ -5,6 +5,5 @@
         "username": "jtl-connector",
         "password": "jtl-connector"
     },
-    "sessionStorage": "Jtl\\Connector\\Core\\Session\\SqliteSessionHandler",
-    "token": "8ZK4L2QM7X9RBT1A"
+    "token": "1234567890"
 }

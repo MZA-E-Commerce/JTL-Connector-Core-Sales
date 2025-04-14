@@ -12,6 +12,7 @@ use DI\DependencyException;
 use DI\NotFoundException;
 use Doctrine\Common\Annotations\AnnotationException;
 use Doctrine\Common\Annotations\AnnotationRegistry;
+use Doctrine\DBAL\DriverManager;
 use Jawira\CaseConverter\CaseConverterException;
 use JMS\Serializer\Exception\LogicException;
 use JMS\Serializer\Exception\NotAcceptableException;
@@ -89,6 +90,8 @@ use Jtl\Connector\Core\Session\SqliteSessionHandler;
 use Jtl\Connector\Core\Subscriber\FeaturesSubscriber;
 use Jtl\Connector\Core\Subscriber\RequestParamsTransformSubscriber;
 use Jtl\Connector\Core\Utilities\Validator\Validate;
+use Jtl\Connector\Dbc\Connection;
+use Jtl\Connector\Dbc\DbManager;
 use Monolog\ErrorHandler as MonologErrorHandler;
 use Noodlehaus\Exception\EmptyDirectoryException;
 use Psr\Container\ContainerInterface;
@@ -328,6 +331,9 @@ class Application
         $this->errorHandler->register();
         MonologErrorHandler::register($this->loggerService->get(LoggerService::CHANNEL_ERROR));
         $requestPacket = RequestPacket::createFromJtlrpc($jtlRpc, $this->serializer);
+
+        #var_dump($requestPacket);die;
+
         $this->errorHandler->setRequestPacket($requestPacket);
         $responsePacket = null;
 
@@ -462,12 +468,34 @@ class Application
      * @throws SessionException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
+     * @throws \Exception
      */
     public function getSessionHandler(): SessionHandlerInterface
     {
         if (!isset($this->sessionHandler)) {
-            $this->sessionHandler = new SqliteSessionHandler(\sprintf('%s/var', $this->connectorDir));
+
+            // Different Session Handler implementations
+            #$this->sessionHandler = new SqliteSessionHandler(\sprintf('%s/var', $this->connectorDir));
             #$this->sessionHandler = new MySQLSessionHandler($this->pdo);
+
+            $connectionParams = [
+                'dbname'   => $this->config->get('db.name'),
+                'user'     => $this->config->get('db.username'),
+                'password' => $this->config->get('db.password'),
+                'host'     => $this->config->get('db.host'),
+                'driver'   => 'pdo_mysql',
+                'charset'  => 'utf8mb4'
+            ];
+
+            $config = new \Doctrine\DBAL\Configuration();
+            $conn = new Connection(
+                DriverManager::getConnection($connectionParams, $config)->getParams(),
+                DriverManager::getConnection($connectionParams, $config)->getDriver(),
+                $config
+            );
+            $dbManager = new DbManager($conn);
+
+            $this->sessionHandler = new \Jtl\Connector\Dbc\Session\SessionHandler($dbManager);
             $this->sessionHandler->setLogger($this->loggerService->get(LoggerService::CHANNEL_SESSION));
         }
 

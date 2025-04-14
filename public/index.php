@@ -32,25 +32,25 @@ $connector = new Connector();
 try {
     $application->run($connector);
 } catch (\DI\DependencyException $e) {
-
+    echo $e->getMessage();
 } catch (\DI\NotFoundException $e) {
-
+    echo $e->getMessage();
 } catch (\Jtl\Connector\Core\Exception\ApplicationException $e) {
-
+    echo $e->getMessage();
 } catch (\Jtl\Connector\Core\Exception\CompressionException $e) {
-
+    echo $e->getMessage();
 } catch (\Jtl\Connector\Core\Exception\ConfigException $e) {
-
+    echo $e->getMessage();
 } catch (\Jtl\Connector\Core\Exception\DefinitionException $e) {
-
+    echo $e->getMessage();
 } catch (\Jtl\Connector\Core\Exception\FileNotFoundException $e) {
-
+    echo $e->getMessage();
 } catch (\Jtl\Connector\Core\Exception\RpcException $e) {
-
+    echo $e->getMessage();
 } catch (\Jtl\Connector\Core\Exception\SessionException $e) {
-
+    echo $e->getMessage();
 } catch (ReflectionException $e) {
-
+    echo $e->getMessage();
 } catch (Throwable $e) {
-
+    echo $e->getMessage();
 }

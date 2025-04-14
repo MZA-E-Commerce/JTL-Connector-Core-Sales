@@ -1,18 +1,18 @@
 {
     "entities": {
         "Category": {
-            "pull": true,
+            "pull": false,
             "push": true,
-            "delete": true
+            "delete": false
         },
         "CategoryAttr": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "CategoryAttrI18n": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "CategoryCustomerGroup": {
@@ -22,17 +22,17 @@
         },
         "CategoryI18n": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "CategoryInvisibility": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "Checksum": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "ConfigGroup": {
@@ -116,52 +116,52 @@
             "delete": false
         },
         "CustomerOrder": {
-            "pull": false,
+            "pull": true,
             "push": false,
             "delete": false
         },
         "CustomerOrderAttr": {
-            "pull": false,
+            "pull": true,
             "push": false,
             "delete": false
         },
         "CustomerOrderBillingAddress": {
-            "pull": false,
+            "pull": true,
             "push": false,
             "delete": false
         },
         "CustomerOrderItem": {
-            "pull": false,
+            "pull": true,
             "push": false,
             "delete": false
         },
         "CustomerOrderItemVariation": {
-            "pull": false,
+            "pull": true,
             "push": false,
             "delete": false
         },
         "CustomerOrderPaymentInfo": {
-            "pull": false,
+            "pull": true,
             "push": false,
             "delete": false
         },
         "CustomerOrderShippingAddress": {
-            "pull": false,
+            "pull": true,
             "push": false,
             "delete": false
         },
         "DeliveryNote": {
-            "pull": false,
+            "pull": true,
             "push": false,
             "delete": false
         },
         "DeliveryNoteItem": {
-            "pull": false,
+            "pull": true,
             "push": false,
             "delete": false
         },
         "DeliveryNoteItemInfo": {
-            "pull": false,
+            "pull": true,
             "push": false,
             "delete": false
         },
@@ -252,17 +252,17 @@
         },
         "Product": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "Product2Category": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "ProductAttr": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "ProductAttrI18n": {
@@ -287,7 +287,7 @@
         },
         "ProductInvisibility": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "ProductPartsList": {
@@ -297,47 +297,47 @@
         },
         "ProductPrice": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "ProductPriceItem": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "ProductSpecialPrice": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "ProductSpecialPriceItem": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "ProductSpecific": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "ProductStockLevel": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "ProductType": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "ProductVarCombination": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "ProductVariation": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "ProductVariationI18n": {
@@ -347,12 +347,12 @@
         },
         "ProductVariationInvisibility": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "ProductVariationValue": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "ProductVariationValueDependency": {
@@ -377,12 +377,12 @@
         },
         "ProductWarehouseInfo": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "Shipment": {
             "pull": false,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "ShippingClass": {
@@ -458,9 +458,9 @@
     },
     "flags": {
         "var_combination_child_first": false,
-        "product_images_supported": true,
-        "category_images_supported": true,
-        "manufacturer_images_supported": true,
+        "product_images_supported": false,
+        "category_images_supported": false,
+        "manufacturer_images_supported": false,
         "specific_images_supported": false,
         "specific_value_images_supported": false,
         "config_group_images_supported": false,
@@ -472,6 +472,6 @@
         "needs_category_root": false,
         "translated_attributes_supported": false,
         "send_all_acks": false,
-        "disable_statistics": false
+        "disable_statistics": true
     }
 }
