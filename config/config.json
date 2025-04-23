@@ -1,9 +1,33 @@
 {
     "db": {
-        "host": "db",
+        "host": "jtl-connector-db",
         "name": "jtl-connector",
         "username": "jtl-connector",
         "password": "jtl-connector"
     },
-    "token": "1234567890"
+    "token": "1234567890",
+    "pimcore": {
+        "api": {
+            "url": "http://mza-nginx/api/jtl/connector",
+            "key": "1234567890",
+            "endpoints": {
+                "getId": {
+                    "method": "GET",
+                    "url": "/getId?sku={sku}"
+                },
+                "setProductStockLevel": {
+                    "method": "POST",
+                    "url": "/setProductStock"
+                },
+                "setProductPrice": {
+                    "method": "POST",
+                    "url": "/setProductPrice"
+                },
+                "setProductData": {
+                    "method": "POST",
+                    "url": "/setProductData"
+                }
+            }
+        }
+    }
 }

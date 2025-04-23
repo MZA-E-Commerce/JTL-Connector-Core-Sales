@@ -3,7 +3,9 @@
 namespace Jtl\Connector\Core\Mapper;
 
 use Jtl\Connector\Core\Mapper\PrimaryKeyMapperInterface;
+use Monolog\Logger;
 use PDO;
+use Psr\Log\LoggerInterface;
 
 class PrimaryKeyMapper implements PrimaryKeyMapperInterface
 {
@@ -13,12 +15,18 @@ class PrimaryKeyMapper implements PrimaryKeyMapperInterface
     protected $pdo;
 
     /**
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
+
+    /**
      * PrimaryKeyMapper constructor.
      * @param PDO $pdo
      */
     public function __construct(PDO $pdo)
     {
         $this->pdo = $pdo;
+        $this->logger = new Logger('PrimaryKeyMapper');
     }
 
     /**
@@ -30,7 +38,18 @@ class PrimaryKeyMapper implements PrimaryKeyMapperInterface
         $statement = $this->pdo->prepare('SELECT host FROM mappings WHERE endpoint = ? AND type = ?');
         $statement->execute([$endpointId, $type]);
 
-        return $statement->fetch()['host'];
+        $row = $statement->fetch();
+
+        if ($row && isset($row['host'])) {
+            return (int)$row['host'];
+        }
+
+        $this->logger->warning('No mapping found in getHostId', [
+            'endpointId' => $endpointId,
+            'type' => $type
+        ]);
+
+        return null;
     }
 
     /**
@@ -42,7 +61,18 @@ class PrimaryKeyMapper implements PrimaryKeyMapperInterface
         $statement = $this->pdo->prepare('SELECT endpoint FROM mappings WHERE host = ? AND type = ?');
         $statement->execute([$hostId, $type]);
 
-        return $statement->fetch()['endpoint'];
+        $row = $statement->fetch();
+
+        if ($row && isset($row['endpoint'])) {
+            return $row['endpoint'];
+        }
+
+        $this->logger->warning('No mapping found in getEndpointId', [
+            'hostId' => $hostId,
+            'type' => $type
+        ]);
+
+        return null;
     }
 
     /**

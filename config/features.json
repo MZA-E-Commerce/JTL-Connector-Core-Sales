@@ -1,458 +1,458 @@
 {
     "entities": {
         "Category": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "CategoryAttr": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "CategoryAttrI18n": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "CategoryCustomerGroup": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "CategoryI18n": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "CategoryInvisibility": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "Checksum": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "ConfigGroup": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "ConfigGroupI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "ConfigItem": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "ConfigItemI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "ConfigItemPrice": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "CrossSelling": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "CrossSellingGroup": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "CrossSellingGroupI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "CrossSellingItem": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "Currency": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "Customer": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "CustomerAttr": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "CustomerGroup": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "CustomerGroupAttr": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "CustomerGroupI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "CustomerGroupPackagingQuantity": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "CustomerOrder": {
             "pull": true,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "CustomerOrderAttr": {
             "pull": true,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "CustomerOrderBillingAddress": {
             "pull": true,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "CustomerOrderItem": {
             "pull": true,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "CustomerOrderItemVariation": {
             "pull": true,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "CustomerOrderPaymentInfo": {
             "pull": true,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "CustomerOrderShippingAddress": {
             "pull": true,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "DeliveryNote": {
             "pull": true,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "DeliveryNoteItem": {
             "pull": true,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "DeliveryNoteItemInfo": {
             "pull": true,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "FileDownload": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "FileDownloadI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "FileUpload": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "FileUploadI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "GlobalData": {
             "pull": true,
-            "push": false,
+            "push": true,
             "delete": false
         },
         "Image": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "Language": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "Manufacturer": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "ManufacturerI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "MeasurementUnit": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "MeasurementUnitI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "MediaFile": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "MediaFileAttr": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "MediaFileAttrI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "MediaFileI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "PartsList": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "Payment": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "Product": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "Product2Category": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "ProductAttr": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "ProductAttrI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "ProductConfigGroup": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "ProductFileDownload": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "ProductI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "ProductInvisibility": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "ProductPartsList": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "ProductPrice": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "ProductPriceItem": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "ProductSpecialPrice": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "ProductSpecialPriceItem": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "ProductSpecific": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "ProductStockLevel": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "ProductType": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "ProductVarCombination": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "ProductVariation": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "ProductVariationI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "ProductVariationInvisibility": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "ProductVariationValue": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "ProductVariationValueDependency": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "ProductVariationValueExtraCharge": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "ProductVariationValueI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "ProductVariationValueInvisibility": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "ProductWarehouseInfo": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "Shipment": {
-            "pull": false,
+            "pull": true,
             "push": true,
             "delete": false
         },
         "ShippingClass": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "Specific": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "SpecificI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "SpecificValue": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "SpecificValueI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "Statistic": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "StatusChange": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "TaxClass": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "TaxRate": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "TaxZone": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "TaxZoneCountry": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "Unit": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "UnitI18n": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         },
         "Warehouse": {
-            "pull": false,
-            "push": false,
+            "pull": true,
+            "push": true,
             "delete": false
         }
     },
@@ -464,14 +464,14 @@
         "specific_images_supported": false,
         "specific_value_images_supported": false,
         "config_group_images_supported": false,
-        "product_variation_value_images_supported": false,
-        "variation_products_supported": false,
+        "product_variation_value_images_supported": true,
+        "variation_products_supported": true,
         "variation_combinations_supported": true,
-        "set_articles_supported": false,
-        "free_field_supported": false,
-        "needs_category_root": false,
-        "translated_attributes_supported": false,
-        "send_all_acks": false,
+        "set_articles_supported": true,
+        "free_field_supported": true,
+        "needs_category_root": true,
+        "translated_attributes_supported": true,
+        "send_all_acks": true,
         "disable_statistics": true
     }
 }

@@ -33,7 +33,8 @@
         "whitecube/lingua": "^1.1",
         "ext-fileinfo": "*",
         "doctrine/dbal": "^2.5",
-        "ext-pdo": "*"
+        "ext-pdo": "*",
+        "symfony/http-client": "^6.2"
     },
     "require-dev": {
         "mikey179/vfsstream": "^1.6",

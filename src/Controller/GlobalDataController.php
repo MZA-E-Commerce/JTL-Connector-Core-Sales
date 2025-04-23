@@ -3,6 +3,7 @@
 namespace Jtl\Connector\Core\Controller;
 
 use Jtl\Connector\Core\Controller\PullInterface;
+use Jtl\Connector\Core\Model\AbstractModel;
 use Jtl\Connector\Core\Model\Currency;
 use Jtl\Connector\Core\Model\CustomerGroup;
 use Jtl\Connector\Core\Model\CustomerGroupI18n;
@@ -14,7 +15,7 @@ use Jtl\Connector\Core\Model\ShippingMethod;
 use Jtl\Connector\Core\Model\TaxRate;
 use Ramsey\Uuid\Uuid;
 
-class GlobalDataController implements PullInterface
+class GlobalDataController implements PullInterface, PushInterface
 {
     /**
      * @inheritDoc
@@ -32,7 +33,7 @@ class GlobalDataController implements PullInterface
         // Languages
         $globalData->addLanguage(
             (new Language())->setId(new Identity('4faa508a23e3427889bfae0561d7915d'))
-                ->setLanguageISO('de')
+                ->setLanguageISO('ger')
                 ->setIsDefault(true)
                 ->setNameGerman('Deutsch')
                 ->setNameEnglish('German')
@@ -61,17 +62,17 @@ class GlobalDataController implements PullInterface
 //
         // CustomerGroups
         $globalData->addCustomerGroup(
-            (new CustomerGroup())->setId(new Identity('c2c6154f05b342d4b2da85e51ec805c9'))
+            (new CustomerGroup())->setId(new Identity(AbstractController::CUSTOMER_TYPE_B2C))
                 ->setIsDefault(true)
                 ->setApplyNetPrice(false)
-                ->addI18n((new CustomerGroupI18n())->setName('Endkunden')->setLanguageIso('de'))
+                ->addI18n((new CustomerGroupI18n())->setName('Endkunden')->setLanguageIso('ger'))
         );
 
         $globalData->addCustomerGroup(
-            (new CustomerGroup())->setId(new Identity('b1d7b4cbe4d846f0b323a9d840800177'))
+            (new CustomerGroup())->setId(new Identity(AbstractController::CUSTOMER_TYPE_B2B))
                 ->setIsDefault(false)
                 ->setApplyNetPrice(true)
-                ->addI18n((new CustomerGroupI18n())->setName('Händler')->setLanguageIso('de'))
+                ->addI18n((new CustomerGroupI18n())->setName('Händler')->setLanguageIso('ger'))
         );
 //
         // TaxRates
@@ -99,5 +100,10 @@ class GlobalDataController implements PullInterface
         $result[] = $globalData;
 
         return $result;
+    }
+
+    public function push(AbstractModel ...$model): array
+    {
+        return [];
     }
 }
