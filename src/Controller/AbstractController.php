@@ -183,9 +183,16 @@ abstract class AbstractController
         $client = $this->getHttpClient();
         $fullApiUrl = $this->getEndpointUrl($type);
 
+        $postData = [];
+
         switch ($type) {
             case self::UPDATE_TYPE_PRODUCT_STOCK_LEVEL:
                 $this->logger->info('Updating product stock level in Pimcore (SKU: ' . $product->getSku() . ')');
+                $postData = [
+                    'id' => $product->getId()->getEndpoint(),
+                    'stockLevel' => $product->getStockLevel(),
+                ];
+
                 break;
             case self::UPDATE_TYPE_PRODUCT_PRICE:
                 $this->logger->info('Updating product price in Pimcore (SKU: ' . $product->getSku() . ')');
@@ -198,29 +205,30 @@ abstract class AbstractController
                     'prices' => $product->getPrices(),
                 ];
 
-                file_put_contents('/var/www/html/var/log/updateProductPimcore.log', $httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData) . PHP_EOL . PHP_EOL, FILE_APPEND);
-
-                try {
-                    $response = $client->request($httpMethod, $fullApiUrl, ['json' => $postData]);
-
-                    $statusCode = $response->getStatusCode();
-                    $responseData = $response->toArray();
-
-                    var_dump($statusCode, $responseData);
-
-                    throw new \RuntimeException('Pimcore API error: ' . ($data['error'] ?? 'Unknown error'));
-
-                } catch (TransportExceptionInterface | HttpExceptionInterface | DecodingExceptionInterface $e) {
-                    throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
-                }
-
                 break;
             case self::UPDATE_TYPE_PRODUCT:
                 $this->logger->info('Updating product in Pimcore (SKU: ' . $product->getSku() . ')');
                 break;
         }
 
-        // Here you would implement the actual logic to update the product in Pimcore.
+        file_put_contents('/var/www/html/var/log/updateProductPimcore.log', $httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData) . PHP_EOL . PHP_EOL, FILE_APPEND);
+
+        try {
+            $response = $client->request($httpMethod, $fullApiUrl, ['json' => $postData]);
+
+            $statusCode = $response->getStatusCode();
+            $responseData = $response->toArray();
+
+            if ($statusCode === 200 && isset($responseData['success']) && $responseData['success'] === true) {
+                $this->logger->info('Product updated successfully in Pimcore (SKU: ' . $product->getSku() . ')');
+                return;
+            }
+
+            throw new \RuntimeException('Pimcore API error: ' . ($data['error'] ?? 'Unknown error'));
+
+        } catch (TransportExceptionInterface | HttpExceptionInterface | DecodingExceptionInterface $e) {
+            throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
+        }
     }
 
     /**

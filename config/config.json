@@ -17,7 +17,7 @@
                 },
                 "setProductStockLevel": {
                     "method": "POST",
-                    "url": "/setProductStock"
+                    "url": "/setProductStockLevel"
                 },
                 "setProductPrice": {
                     "method": "POST",
