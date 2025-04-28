@@ -7,22 +7,13 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Start SSH agent
-        uses: webfactory/ssh-agent@v0.9.1
+      - uses: actions/checkout@v2
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Deploy via SSH script
-        uses: appleboy/ssh-action@v0.1.7
+          fetch-depth: 0
+      - uses: webfactory/ssh-agent@v0.5.3
         with:
-          host:     p689712.mittwaldserver.info
-          username: p689712
-          key:      ${{ secrets.SSH_PRIVATE_KEY }}
-          port:     22
-          script: |
-            bash -l .github/deploy/deploy.sh
+          ssh-private-key: ${{ secrets.DEPLOYMENT_KEY }}
+      - name: "Deploy to Master"
+        if: ${{ github.ref == 'refs/heads/master' }}
+        run: /usr/bin/env bash ${GITHUB_WORKSPACE}/.github/deploy/deploy.sh
