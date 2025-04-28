@@ -6,6 +6,7 @@ use Jtl\Connector\Core\Config\CoreConfigInterface;
 use Jtl\Connector\Core\Model\AbstractModel;
 use Jtl\Connector\Core\Model\Identity;
 use Jtl\Connector\Core\Model\Product;
+use Jtl\Connector\Core\Model\ProductPrice;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
@@ -28,6 +29,14 @@ abstract class AbstractController
     /**
      * @var string
      */
+    public const CUSTOMER_TYPE_MAPPINGS = [
+        self::CUSTOMER_TYPE_B2B => 'B2B',
+        self::CUSTOMER_TYPE_B2C => 'B2C'
+    ];
+
+    /**
+     * @var string
+     */
     protected const UPDATE_TYPE_PRODUCT = 'setProductData';
 
     /**
@@ -39,6 +48,11 @@ abstract class AbstractController
      * @var string
      */
     protected const UPDATE_TYPE_PRODUCT_PRICE = 'setProductPrice';
+
+    /**
+     * @var string
+     */
+    protected const CUSTOMER_TYPE_DEFAULT = self::CUSTOMER_TYPE_B2C;
 
     /**
      * @var CoreConfigInterface
@@ -197,12 +211,13 @@ abstract class AbstractController
             case self::UPDATE_TYPE_PRODUCT_PRICE:
                 $this->logger->info('Updating product price in Pimcore (SKU: ' . $product->getSku() . ')');
 
+                $prices = $this->parsePrices($product);
+
                 $postData = [
                     'id' => $product->getId()->getEndpoint(),
                     'sku' => $product->getSku(),
                     'vat' => $product->getVat(),
-                    'taxClassId' => $product->getTaxClassId(),
-                    'prices' => $product->getPrices(),
+                    'prices' => $prices,
                 ];
 
                 break;
@@ -236,4 +251,31 @@ abstract class AbstractController
      * @return void
      */
     abstract protected function updateModel(Product $model): void;
+
+    /**
+     * @param Product $product
+     * @return array
+     */
+    private function parsePrices(Product $product): array
+    {
+        $prices = [];
+        $pricesData = $product->getPrices();
+
+        foreach ($pricesData as $productPrice) {
+            $items = $productPrice->getItems();
+            $endpointId = $productPrice->getProductId()->getEndpoint();
+            $customerGroup = $productPrice->getCustomerGroupId()->getEndpoint();
+            foreach ($items as $item) {
+                $prices[] = [
+                    'productId' => $endpointId,
+                    'customerGroup' => !empty($customerGroup) ? $customerGroup : 'NOT_SET',
+                    'tenant' => self::CUSTOMER_TYPE_MAPPINGS[$customerGroup] ?? self::CUSTOMER_TYPE_MAPPINGS[self::CUSTOMER_TYPE_DEFAULT],
+                    'quantity' => $item->getQuantity(),
+                    'netPrice' => $item->getNetPrice(),
+                ];
+            }
+        }
+
+        return $prices;
+    }
 }
