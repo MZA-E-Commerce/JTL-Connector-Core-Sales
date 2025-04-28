@@ -44,8 +44,7 @@ fi
 
 BRANCH=${GITHUB_REF#refs/heads/}
 
-#SSH_OPTIONS='-o BatchMode=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
-SSH_OPTIONS='-o BatchMode=yes'
+SSH_OPTIONS='-o BatchMode=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
 
 # Existenz des work trees checken
 TREE_EXISTS=$(ssh $SSH_OPTIONS $DEPLOYMENT_TARGET " test -d $DEPLOYMENT_WORKTREE; echo \$?")
