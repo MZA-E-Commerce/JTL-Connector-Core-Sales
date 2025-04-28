@@ -1,19 +1,164 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
-# Change directory
-cd /home/www/p689712/html/jtl-connector-pimcore
+usage()
+{
+cat << EOF
+usage: $0 options
 
-# Reset to main
-git fetch --all
-git reset --hard origin/main
+This script deploys git projects on remote servers
 
-# Composer install
-composer install --no-dev --optimize-autoloader
+The following environment variables are required:
+ - DEPLOYMENT_SSH_SERVER
+ - DEPLOYMENT_SSH_USER
+ - DEPLOYMENT_REPOPATH
+ - DEPLOYMENT_WORKTREE
+EOF
+}
 
-# Clear cache
-php bin/console cache:clear --env=prod
+CREATE_WORKTREE=true
 
-# Restart services
-#sudo systemctl reload php8.2-fpm
-#sudo systemctl reload nginx
+if [[ -z "$DEPLOYMENT_SSH_SERVER" ]] || [[ -z "$DEPLOYMENT_SSH_USER" ]] || [[ -z "$DEPLOYMENT_REPOPATH" ]] || [[ -z "$DEPLOYMENT_WORKTREE" ]]
+then
+     usage
+     exit 1
+fi
+
+#ssh-keyscan -H "$DEPLOYMENT_SSH_SERVER" >> ~/.ssh/known_hosts
+
+DEPLOYMENT_TARGET="$DEPLOYMENT_SSH_USER@$DEPLOYMENT_SSH_SERVER"
+
+REMOTE_URL="$DEPLOYMENT_TARGET:$DEPLOYMENT_REPOPATH"
+REMOTE_NAME="github"
+
+# Defaults
+if [[ -z "$COMPOSER_COMMAND" ]]; then
+    COMPOSER_COMMAND="composer"
+fi
+if [[ -z "$CREATE_WORKTREE" ]]; then
+    CREATE_WORKTREE="true"
+fi
+
+if [[ -n "$COMPOSER_HOME" ]]; then
+    COMPOSER_HOME="COMPOSER_HOME=${COMPOSER_HOME} "
+fi
+
+BRANCH=${GITHUB_REF#refs/heads/}
+
+#SSH_OPTIONS='-o BatchMode=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+SSH_OPTIONS='-o BatchMode=yes'
+
+# Existenz des work trees checken
+TREE_EXISTS=$(ssh $SSH_OPTIONS $DEPLOYMENT_TARGET " test -d $DEPLOYMENT_WORKTREE; echo \$?")
+if [ "1" == "$TREE_EXISTS" ]; then
+    echo "Work Tree $DEPLOYMENT_WORKTREE does not exist"
+    if [ "true" == "$CREATE_WORKTREE" ]; then
+        echo "Creating Work Tree $DEPLOYMENT_WORKTREE"
+        TREE_CREATED=$(ssh $SSH_OPTIONS $DEPLOYMENT_TARGET " mkdir -p $DEPLOYMENT_WORKTREE; echo \$?");
+        if [ "0" != "$TREE_CREATED" ]; then
+            echo "Creating Work Tree $DEPLOYMENT_WORKTREE failed!"
+            exit 1;
+        fi
+    else
+        exit 1;
+    fi
+else
+    echo "Work Tree $DEPLOYMENT_WORKTREE exists"
+fi
+
+# Existenz des Repos checken
+REPO_EXISTS=0
+
+if [ ! -z $REMOTE_URL ]; then
+    # Jenkins hat root-rechte auf dem Develop-Server
+    echo "Checking Repo with: git ls-remote $REMOTE_URL"
+    git ls-remote $REMOTE_URL # &>/dev/null
+    REPO_EXISTS=$?;
+    echo "Result: $REPO_EXISTS"
+fi
+
+if [ "0" != $REPO_EXISTS ]; then
+    echo "Remote Repository $REMOTE_URL does not exist."
+    # create remote repo
+    REPO_CREATED=$(ssh $SSH_OPTIONS $DEPLOYMENT_TARGET " mkdir -p $DEPLOYMENT_REPOPATH && git --git-dir=$DEPLOYMENT_REPOPATH init --bare")
+    if [[ ! "$REPO_CREATED" =~ .*?nitialized.*? ]]; then
+        echo "Could not create Git repository $REMOTE_URL";
+        exit 1;
+    else
+        echo "Created Git repository $REMOTE_URL";
+    fi
+else
+    echo "Remote Repository $REMOTE_URL exists."
+fi
+
+# Remote hinzufügen
+echo "Adding remote"
+echo "git --git-dir=$GITHUB_WORKSPACE/.git remote add $REMOTE_NAME $REMOTE_URL"
+
+git --git-dir=$GITHUB_WORKSPACE/.git remote add $REMOTE_NAME $REMOTE_URL
+SUCCESS=$?;
+
+if [ "0" != $SUCCESS ]; then
+    echo "Could not add remote $REMOTE_NAME $REMOTE_URL";
+    exit 1;
+fi
+
+# Repo pushen, weil man erst danach den Status checken kann
+echo "Pushing repository"
+echo "git push --mirror $REMOTE_NAME";
+
+git push --mirror $REMOTE_NAME
+
+# Status des Repositories auf dem Remote Server checken
+if [ "$DEPLOYMENT_CLEAN" != "false" ]; then
+    echo "ssh -o \"BatchMode yes\" $DEPLOYMENT_TARGET \" git --git-dir=$DEPLOYMENT_REPOPATH --work-tree=$DEPLOYMENT_WORKTREE status\""
+    STATUS=$(ssh $SSH_OPTIONS $DEPLOYMENT_TARGET " git --git-dir=$DEPLOYMENT_REPOPATH --work-tree=$DEPLOYMENT_WORKTREE status --untracked-files=no")
+
+    if echo $STATUS | grep -qi "working directory clean" || echo $STATUS | grep -qi "nothing to commit" || echo $STATUS | grep -qi "Arbeitsverzeichnis unver" || echo $STATUS | grep -qi "nichts zu committen"; then
+      echo "${REMOTE_HOST}:${REMOTE_TREE} is clean as required"
+    elif echo $STATUS | grep -qi "Not a git repository"; then
+        echo "$DEPLOYMENT_REPOPATH is not a Git repository"
+        exit 1;
+    else
+        echo "${REMOTE_HOST}:${REMOTE_TREE} is unclean. Fix this before you push to $BRANCH"
+        echo $STATUS;
+        exit 1;
+    fi
+fi
+
+# Checkout
+echo ssh $SSH_OPTIONS $DEPLOYMENT_TARGET " git --git-dir=$DEPLOYMENT_REPOPATH --work-tree=$DEPLOYMENT_WORKTREE checkout -f origin/$BRANCH"
+ssh $SSH_OPTIONS $DEPLOYMENT_TARGET " git --git-dir=$DEPLOYMENT_REPOPATH --work-tree=$DEPLOYMENT_WORKTREE checkout -f origin/$BRANCH"
+STATUS="$?"
+
+# Install composer packages
+if [ -f "$GITHUB_WORKSPACE/composer.json" ] || [ -f "$GITHUB_WORKSPACE/composer.lock" ]; then
+    if [ -z "$SKIP_COMPOSER" ]; then
+        echo "Installing composer dependencies"
+        COMPOSER_RESULT=$(ssh $SSH_OPTIONS $DEPLOYMENT_TARGET " ${COMPOSER_HOME}${COMPOSER_COMMAND} install -d \"$DEPLOYMENT_WORKTREE\" --no-dev --no-progress --ignore-platform-reqs --no-interaction --prefer-dist --optimize-autoloader");
+        STATUS_CODE="$?"
+        echo "$COMPOSER_RESULT"
+
+        if [ "$STATUS_CODE" != "0" ]; then
+            echo "Installation of composer dependencies failed"
+            exit 1;
+        fi
+    else
+        echo "Skipping composer step, the SKIP_COMPOSER flag is set"
+    fi
+fi
+
+POST_DEPLOY_SCRIPT_PATH=$DEPLOYMENT_WORKTREE/.blackbit/post-deployment.sh
+if [[ $(ssh $SSH_OPTIONS $DEPLOYMENT_TARGET "[[ -x $POST_DEPLOY_SCRIPT_PATH ]] && echo '1' || echo '0'") == 1 ]]; then
+    echo DEBUG ssh $SSH_OPTIONS $DEPLOYMENT_TARGET ". ${POST_DEPLOY_SCRIPT_PATH}"
+
+    ssh $SSH_OPTIONS $DEPLOYMENT_TARGET ". ${POST_DEPLOY_SCRIPT_PATH}"
+    echo Post Deployment Result:
+    echo -e $POST_DEPLOY_RESULT
+fi
+
+# BBHOST-1036 Rebuild Classes, if Pimcore
+if ([[ -d app/config/pimcore ]] || [[ -d config/pimcore ]]) && [[ $(ssh $SSH_OPTIONS $DEPLOYMENT_TARGET "[[ -x $DEPLOYMENT_WORKTREE/bin/console ]] && echo '1' || echo '0'") == 1 ]]; then
+	ssh $SSH_OPTIONS $DEPLOYMENT_TARGET "grep -s pimcore:deployment:classes-rebuild $POST_DEPLOY_SCRIPT_PATH || $DEPLOYMENT_WORKTREE/bin/console -v pimcore:deployment:classes-rebuild -c"
+fi
+
+exit $STATUS
