@@ -2,7 +2,7 @@ name: Deploy JTL-Connector to Mittwald
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   deploy:
