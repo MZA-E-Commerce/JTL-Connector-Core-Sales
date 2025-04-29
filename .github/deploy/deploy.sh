@@ -27,9 +27,6 @@ fi
 
 DEPLOYMENT_TARGET="$DEPLOYMENT_SSH_USER@$DEPLOYMENT_SSH_SERVER"
 
-REMOTE_URL="$DEPLOYMENT_TARGET:$DEPLOYMENT_REPOPATH"
-REMOTE_NAME="github"
-
 # Defaults
 if [[ -z "$COMPOSER_COMMAND" ]]; then
     COMPOSER_COMMAND="composer"
@@ -64,48 +61,6 @@ else
     echo "Work Tree $DEPLOYMENT_WORKTREE exists"
 fi
 
-# Existenz des Repos checken
-REPO_EXISTS=0
-
-if [ ! -z $REMOTE_URL ]; then
-    # Jenkins hat root-rechte auf dem Develop-Server
-    echo "Checking Repo with: git ls-remote $REMOTE_URL"
-    git ls-remote $REMOTE_URL # &>/dev/null
-    REPO_EXISTS=$?;
-    echo "Result: $REPO_EXISTS"
-fi
-
-if [ "0" != $REPO_EXISTS ]; then
-    echo "Remote Repository $REMOTE_URL does not exist."
-    # create remote repo
-    REPO_CREATED=$(ssh $SSH_OPTIONS $DEPLOYMENT_TARGET " mkdir -p $DEPLOYMENT_REPOPATH && git --git-dir=$DEPLOYMENT_REPOPATH init --bare")
-    if [[ ! "$REPO_CREATED" =~ .*?nitialized.*? ]]; then
-        echo "Could not create Git repository $REMOTE_URL";
-        exit 1;
-    else
-        echo "Created Git repository $REMOTE_URL";
-    fi
-else
-    echo "Remote Repository $REMOTE_URL exists."
-fi
-
-# Remote hinzufügen
-echo "Adding remote"
-echo "git --git-dir=$GITHUB_WORKSPACE/.git remote add $REMOTE_NAME $REMOTE_URL"
-
-git --git-dir=$GITHUB_WORKSPACE/.git remote add $REMOTE_NAME $REMOTE_URL
-SUCCESS=$?;
-
-if [ "0" != $SUCCESS ]; then
-    echo "Could not add remote $REMOTE_NAME $REMOTE_URL";
-    exit 1;
-fi
-
-# Repo pushen, weil man erst danach den Status checken kann
-echo "Pushing repository"
-echo "git push --mirror $REMOTE_NAME";
-
-git push --mirror $REMOTE_NAME
 
 # Status des Repositories auf dem Remote Server checken
 if [ "$DEPLOYMENT_CLEAN" != "false" ]; then
@@ -146,17 +101,7 @@ if [ -f "$GITHUB_WORKSPACE/composer.json" ] || [ -f "$GITHUB_WORKSPACE/composer.
     fi
 fi
 
-POST_DEPLOY_SCRIPT_PATH=$DEPLOYMENT_WORKTREE/.blackbit/post-deployment.sh
-if [[ $(ssh $SSH_OPTIONS $DEPLOYMENT_TARGET "[[ -x $POST_DEPLOY_SCRIPT_PATH ]] && echo '1' || echo '0'") == 1 ]]; then
-    echo DEBUG ssh $SSH_OPTIONS $DEPLOYMENT_TARGET ". ${POST_DEPLOY_SCRIPT_PATH}"
+#  Rebuild Classes
+ssh $SSH_OPTIONS $DEPLOYMENT_TARGET "grep -s pimcore:deployment:classes-rebuild $POST_DEPLOY_SCRIPT_PATH || $DEPLOYMENT_WORKTREE/bin/console -v pimcore:deployment:classes-rebuild -c"
 
-    ssh $SSH_OPTIONS $DEPLOYMENT_TARGET ". ${POST_DEPLOY_SCRIPT_PATH}"
-    echo Post Deployment Result:
-    echo -e $POST_DEPLOY_RESULT
-fi
-
-# BBHOST-1036 Rebuild Classes, if Pimcore
-if ([[ -d app/config/pimcore ]] || [[ -d config/pimcore ]]) && [[ $(ssh $SSH_OPTIONS $DEPLOYMENT_TARGET "[[ -x $DEPLOYMENT_WORKTREE/bin/console ]] && echo '1' || echo '0'") == 1 ]]; then
-	ssh $SSH_OPTIONS $DEPLOYMENT_TARGET "grep -s pimcore:deployment:classes-rebuild $POST_DEPLOY_SCRIPT_PATH || $DEPLOYMENT_WORKTREE/bin/console -v pimcore:deployment:classes-rebuild -c"
-fi
 exit $STATUS
