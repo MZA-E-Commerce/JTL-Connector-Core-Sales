@@ -1,4 +1,4 @@
-name: Deploy JTL-Connector to Mittwald
+name: Deploy JTL-Connector (PIMCORE) to Mittwald
 
 on:
   push:
