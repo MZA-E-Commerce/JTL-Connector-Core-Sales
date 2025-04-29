@@ -159,5 +159,4 @@ fi
 if ([[ -d app/config/pimcore ]] || [[ -d config/pimcore ]]) && [[ $(ssh $SSH_OPTIONS $DEPLOYMENT_TARGET "[[ -x $DEPLOYMENT_WORKTREE/bin/console ]] && echo '1' || echo '0'") == 1 ]]; then
 	ssh $SSH_OPTIONS $DEPLOYMENT_TARGET "grep -s pimcore:deployment:classes-rebuild $POST_DEPLOY_SCRIPT_PATH || $DEPLOYMENT_WORKTREE/bin/console -v pimcore:deployment:classes-rebuild -c"
 fi
-
 exit $STATUS
