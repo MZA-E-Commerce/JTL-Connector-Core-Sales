@@ -226,7 +226,7 @@ abstract class AbstractController
                 break;
         }
 
-        file_put_contents('/var/www/html/var/log/updateProductPimcore.log', $httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData) . PHP_EOL . PHP_EOL, FILE_APPEND);
+        #file_put_contents('/var/www/html/var/log/updateProductPimcore.log', $httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData) . PHP_EOL . PHP_EOL, FILE_APPEND);
 
         try {
             $response = $client->request($httpMethod, $fullApiUrl, ['json' => $postData]);
