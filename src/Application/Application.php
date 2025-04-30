@@ -327,7 +327,7 @@ class Application
     {
         $jtlRpc = Validate::string($this->httpRequest->get('jtlrpc', ''));
 
-       # file_put_contents('/var/www/html/var/log/rpc.log', $jtlRpc . PHP_EOL . PHP_EOL, FILE_APPEND);
+        file_put_contents('/var/www/html/var/log/rpc_in.log', $jtlRpc . PHP_EOL . PHP_EOL, FILE_APPEND);
 
         $this->httpResponse->setLogger($this->loggerService->get(LoggerService::CHANNEL_RPC));
         $this->eventDispatcher->addSubscriber(new RequestParamsTransformSubscriber());
@@ -383,7 +383,7 @@ class Application
             }
             $requestPacket->setParams($data);
 
-            file_put_contents('/var/www/html/var/log/rpc.log', 'Controller: ' . $method->getController() . ', method: ' . $method->getAction() . ', data: ' . json_encode($data) . PHP_EOL . PHP_EOL, FILE_APPEND);
+            file_put_contents('/var/www/html/var/log/rpc_controller.log', 'Controller: ' . $method->getController() . ', method: ' . $method->getAction() . ', data: ' . json_encode($data) . PHP_EOL . PHP_EOL, FILE_APPEND);
 
             $responsePacket = $this->execute($connector, $requestPacket, $method);
             /** @var Warnings $warnings */
@@ -415,6 +415,7 @@ class Application
                 ? $responsePacket
                 : ResponsePacket::create($requestPacket->getId());
             $this->fileSystem->remove($this->deleteFromFileSystem);
+
             $this->httpResponse->prepareAndSend($requestPacket, Validate::responsePacket($responsePacket));
 
             if (\random_int(0, 99) === 0) {
