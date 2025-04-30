@@ -73,10 +73,6 @@ class GlobalDataController implements PullInterface, PushInterface
         );
 //
         // TaxRates
-        $globalData->addTaxRate(
-            (new TaxRate())->setId(new Identity('f7ddd489ab0a82567b241b05971cbdb3'))
-                ->setRate(0.0)->setCountryIso('DE')
-        );
 
         $globalData->addTaxRate(
             (new TaxRate())->setId(new Identity('f1ec9220f3f64049926a83f5ba8df985'))
