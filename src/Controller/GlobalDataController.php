@@ -23,10 +23,6 @@ class GlobalDataController implements PullInterface, PushInterface
 
         $globalData = new GlobalData;
 
-        // ***************************************
-        // * Static values for presentation only *
-        // ***************************************
-
         // Languages
         $globalData->addLanguage(
             (new Language())->setId(new Identity('4faa508a23e3427889bfae0561d7915d'))
@@ -35,14 +31,6 @@ class GlobalDataController implements PullInterface, PushInterface
                 ->setNameGerman('Deutsch')
                 ->setNameEnglish('German')
         );
-
-        #$globalData->addLanguage(
-        #    (new Language())->setId(new Identity('8acb0d79a1bc407e9194cc5d8359aaec'))
-        #        ->setLanguageISO('eng')
-        #        ->setIsDefault(false)
-        #        ->setNameGerman('Englisch')
-        #        ->setNameEnglish('English')
-        #);
 
         // Currencies
         $globalData->addCurrency(
@@ -56,7 +44,7 @@ class GlobalDataController implements PullInterface, PushInterface
                 ->setIso('EUR')
                 ->setNameHtml('&euro;')
         );
-//
+
         // CustomerGroups
         $globalData->addCustomerGroup(
             (new CustomerGroup())->setId(new Identity(AbstractController::CUSTOMER_TYPE_B2C))
@@ -71,7 +59,7 @@ class GlobalDataController implements PullInterface, PushInterface
                 ->setApplyNetPrice(true)
                 ->addI18n((new CustomerGroupI18n())->setName('Händler')->setLanguageIso('ger'))
         );
-//
+
         // TaxRates
 
         $globalData->addTaxRate(
@@ -83,12 +71,6 @@ class GlobalDataController implements PullInterface, PushInterface
             (new TaxRate())->setId(new Identity('ec0a029a85554745aa42fb708d3c5c8c'))
                 ->setRate(7.0)->setCountryIso('DE')
         );
-//
-//        // shippingMethods
-//        $globalData->addShippingMethod(
-//            (new ShippingMethod())->setId(new Identity('7adeec3fbbe942c6a8e910ead168703d'))
-//                ->setName('DHL Versand')
-//        );
 
         $result[] = $globalData;
 
