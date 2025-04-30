@@ -2,7 +2,6 @@
 
 namespace Jtl\Connector\Core\Controller;
 
-use Jtl\Connector\Core\Controller\PullInterface;
 use Jtl\Connector\Core\Model\AbstractModel;
 use Jtl\Connector\Core\Model\Currency;
 use Jtl\Connector\Core\Model\CustomerGroup;
@@ -11,9 +10,7 @@ use Jtl\Connector\Core\Model\GlobalData;
 use Jtl\Connector\Core\Model\Identity;
 use Jtl\Connector\Core\Model\Language;
 use Jtl\Connector\Core\Model\QueryFilter;
-use Jtl\Connector\Core\Model\ShippingMethod;
 use Jtl\Connector\Core\Model\TaxRate;
-use Ramsey\Uuid\Uuid;
 
 class GlobalDataController implements PullInterface, PushInterface
 {
@@ -78,17 +75,17 @@ class GlobalDataController implements PullInterface, PushInterface
         // TaxRates
         $globalData->addTaxRate(
             (new TaxRate())->setId(new Identity('f7ddd489ab0a82567b241b05971cbdb3'))
-                ->setRate(0.0)
+                ->setRate(0.0)->setCountryIso('DE')
         );
 
         $globalData->addTaxRate(
             (new TaxRate())->setId(new Identity('f1ec9220f3f64049926a83f5ba8df985'))
-                ->setRate(19.0)
+                ->setRate(19.0)->setCountryIso('DE')
         );
 
         $globalData->addTaxRate(
             (new TaxRate())->setId(new Identity('ec0a029a85554745aa42fb708d3c5c8c'))
-                ->setRate(7.0)
+                ->setRate(7.0)->setCountryIso('DE')
         );
 //
 //        // shippingMethods
