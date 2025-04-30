@@ -103,7 +103,7 @@ if [ -f "$GITHUB_WORKSPACE/composer.json" ] || [ -f "$GITHUB_WORKSPACE/composer.
     fi
 fi
 
-#  Rebuild Classes
-ssh $SSH_OPTIONS $DEPLOYMENT_TARGET "grep -s pimcore:deployment:classes-rebuild $POST_DEPLOY_SCRIPT_PATH || $DEPLOYMENT_WORKTREE/bin/console -v pimcore:deployment:classes-rebuild -c"
+#  Rebuild Classes if pimcore
+#ssh $SSH_OPTIONS $DEPLOYMENT_TARGET "grep -s pimcore:deployment:classes-rebuild $POST_DEPLOY_SCRIPT_PATH || $DEPLOYMENT_WORKTREE/bin/console -v pimcore:deployment:classes-rebuild -c"
 
 exit $STATUS
