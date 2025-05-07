@@ -211,32 +211,26 @@ abstract class AbstractController
     {
         $httpMethod = $this->config->get('pimcore.api.endpoints.' . $type . '.method');
         $client = $this->getHttpClient();
-        $fullApiUrl = $this->getEndpointUrl($type);
+$fullApiUrl = $this->getEndpointUrl($type);
 
-        if (empty($product->getId()->getEndpoint())) {
-            throw new \RuntimeException('Product endpoint ID is empty!');
-        }
+// Set id of Pimcore product
+$postData = [
+'id' => $product->getId()->getEndpoint()
+];
 
-        // Set id of Pimcore product
-        $postData = [
-            'id' => $product->getId()->getEndpoint()
-        ];
+switch ($type) {
+case self::UPDATE_TYPE_PRODUCT_STOCK_LEVEL:
+    $this->logger->info('Updating product stock level (SKU: ' . $product->getSku() . ')');
+    $postData['stockLevel'] = $product->getStockLevel();
+    break;
+case self::UPDATE_TYPE_PRODUCT_PRICE:
+    $this->logger->info('Updating product price (SKU: ' . $product->getSku() . ')');
+    // Prices
+    $postData['prices'] = $this->getPrices($product);
 
-        switch ($type) {
-            case self::UPDATE_TYPE_PRODUCT_STOCK_LEVEL:
-                $this->logger->info('Updating product stock level (SKU: ' . $product->getSku() . ')');
-                $postData['stockLevel'] = $product->getStockLevel();
-                break;
-            case self::UPDATE_TYPE_PRODUCT_PRICE:
-                $this->logger->info('Updating product price (SKU: ' . $product->getSku() . ')');
-                // Prices
-                $postData['prices'] = $this->getPrices($product);
-
-                break;
-            case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett senden"!
-                $this->logger->info('Updating full product (SKU: ' . $product->getSku() . ')');
-                // Stock level
-                $postData['stockLevel'] = $product->getStockLevel();
+    break;
+case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett senden"!
+    $this->logger->info('Updating full product (SKU: ' . $product->getSku() . ')');
                 // Prices
                 $postData['prices'] = $this->getPrices($product);
                 // Recommended retail price gross
@@ -250,7 +244,7 @@ abstract class AbstractController
                 break;
         }
 
-        file_put_contents('/var/www/html/var/log/postData.log', $httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData) . PHP_EOL . PHP_EOL);
+        file_put_contents('/var/www/html/var/log/postData_'.$type.'.log', $httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData) . PHP_EOL . PHP_EOL);
 
         try {
             $response = $client->request($httpMethod, $fullApiUrl, ['json' => $postData]);
