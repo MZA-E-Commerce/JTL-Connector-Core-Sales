@@ -31,7 +31,8 @@ abstract class AbstractController
      */
     public const CUSTOMER_TYPE_MAPPINGS = [
         self::CUSTOMER_TYPE_B2B => 'B2B',
-        self::CUSTOMER_TYPE_B2C => 'B2C'
+        self::CUSTOMER_TYPE_B2C => 'B2C',
+        '' => 'CUSTOMER_TYPE_NOT_SET'
     ];
 
     /**
@@ -53,6 +54,21 @@ abstract class AbstractController
      * @var string
      */
     protected const CUSTOMER_TYPE_DEFAULT = self::CUSTOMER_TYPE_B2C;
+
+    /**
+     * @var string
+     */
+    protected const PRICE_TYPE_RETAIL_NET = 'retail_price_net';
+
+    /**
+     * @var string
+     */
+    protected const PRICE_TYPE_REGULAR = 'regular';
+
+    /**
+     * @var string
+     */
+    protected const PRICE_TYPE_SPECIAL = 'special';
 
     /**
      * @var CoreConfigInterface
@@ -197,36 +213,44 @@ abstract class AbstractController
         $client = $this->getHttpClient();
         $fullApiUrl = $this->getEndpointUrl($type);
 
-        $postData = [];
+        if (empty($product->getId()->getEndpoint())) {
+            throw new \RuntimeException('Product endpoint ID is empty!');
+        }
+
+        // Set id of Pimcore product
+        $postData = [
+            'id' => $product->getId()->getEndpoint()
+        ];
 
         switch ($type) {
             case self::UPDATE_TYPE_PRODUCT_STOCK_LEVEL:
-                $this->logger->info('Updating product stock level in Pimcore (SKU: ' . $product->getSku() . ')');
-                $postData = [
-                    'id' => $product->getId()->getEndpoint(),
-                    'stockLevel' => $product->getStockLevel(),
-                ];
-
+                $this->logger->info('Updating product stock level (SKU: ' . $product->getSku() . ')');
+                $postData['stockLevel'] = $product->getStockLevel();
                 break;
             case self::UPDATE_TYPE_PRODUCT_PRICE:
-                $this->logger->info('Updating product price in Pimcore (SKU: ' . $product->getSku() . ')');
-
-                $prices = $this->parsePrices($product);
-
-                $postData = [
-                    'id' => $product->getId()->getEndpoint(),
-                    'sku' => $product->getSku(),
-                    'vat' => $product->getVat(),
-                    'prices' => $prices,
-                ];
+                $this->logger->info('Updating product price (SKU: ' . $product->getSku() . ')');
+                // Prices
+                $postData['prices'] = $this->getPrices($product);
 
                 break;
-            case self::UPDATE_TYPE_PRODUCT:
+            case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett senden"!
+                $this->logger->info('Updating full product (SKU: ' . $product->getSku() . ')');
+                // Stock level
+                $postData['stockLevel'] = $product->getStockLevel();
+                // Prices
+                $postData['prices'] = $this->getPrices($product);
+                // Recommended retail price gross
+                $postData['uvpGross'] = round($product->getRecommendedRetailPrice(), 4, PHP_ROUND_HALF_UP);
+                // Recommended retail price net
+                $postData['uvpNet'] = round($product->getRecommendedRetailPrice() * (1 + ($product->getVat() / 100)), 4, PHP_ROUND_HALF_UP);
+                // Tax rate
+                $postData['taxRate'] = $product->getVat();
+
                 $this->logger->info('Updating product in Pimcore (SKU: ' . $product->getSku() . ')');
                 break;
         }
 
-        #file_put_contents('/var/www/html/var/log/updateProductPimcore.log', $httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData) . PHP_EOL . PHP_EOL, FILE_APPEND);
+        file_put_contents('/var/www/html/var/log/postData.log', $httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData) . PHP_EOL . PHP_EOL);
 
         try {
             $response = $client->request($httpMethod, $fullApiUrl, ['json' => $postData]);
@@ -256,26 +280,113 @@ abstract class AbstractController
      * @param Product $product
      * @return array
      */
-    private function parsePrices(Product $product): array
+    private function getPrices(Product $product): array
     {
-        $prices = [];
-        $pricesData = $product->getPrices();
+        /**
+         * $specialPrices = false - UPDATE_TYPE_PRODUCT_PRICE ("productPrice.push")
+         *
+         * [
+         * {
+         * "type": "regular",
+         * "customerGroupId": "B2C",
+         * "priceNet": 4,
+         * "quantity": 0
+         * },
+         * {
+         * "type": "regular",
+         * "customerGroupId": "B2B",
+         * "priceNet": 5,
+         * "quantity": 0
+         * },
+         * {
+         * "type": "regular",
+         * "customerGroupId": "CUSTOMER_TYPE_NOT_SET",
+         * "priceNet": 7,
+         * "quantity": 0
+         * }
+         * ]
+         */
 
-        foreach ($pricesData as $productPrice) {
-            $items = $productPrice->getItems();
-            $endpointId = $productPrice->getProductId()->getEndpoint();
-            $customerGroup = $productPrice->getCustomerGroupId()->getEndpoint();
-            foreach ($items as $item) {
-                $prices[] = [
-                    'productId' => $endpointId,
-                    'customerGroup' => !empty($customerGroup) ? $customerGroup : 'NOT_SET',
-                    'tenant' => self::CUSTOMER_TYPE_MAPPINGS[$customerGroup] ?? self::CUSTOMER_TYPE_MAPPINGS[self::CUSTOMER_TYPE_DEFAULT],
-                    'quantity' => $item->getQuantity(),
-                    'netPrice' => $item->getNetPrice(),
+        /**
+         * $specialPrices = true - UPDATE_TYPE_PRODUCT ("product.push")
+         *
+         * [
+         * {
+         * "type": "regular",
+         * "customerGroupId": "B2C",
+         * "priceNet": 4,
+         * "quantity": 0
+         * },
+         * {
+         * "type": "regular",
+         * "customerGroupId": "B2B",
+         * "priceNet": 5,
+         * "quantity": 0
+         * },
+         * {
+         * "type": "regular",
+         * "customerGroupId": "CUSTOMER_TYPE_NOT_SET",
+         * "priceNet": 7,
+         * "quantity": 0
+         * },
+         * {
+         * "type": "special",
+         * "customerGroupId": "B2C",
+         * "priceNet": 10,
+         * "from": "2025-05-01",
+         * "until": "2025-05-22"
+         * },
+         * {
+         * "type": "special",
+         * "customerGroupId": "B2B",
+         * "priceNet": 11,
+         * "from": "2025-05-01",
+         * "until": "2025-05-22"
+         * }
+         * ]
+         */
+
+        $result = [
+            self::PRICE_TYPE_REGULAR => [],
+            self::PRICE_TYPE_SPECIAL => []
+        ];
+
+        // 1) regular prices
+        foreach ($product->getPrices() as $priceModel) {
+            foreach ($priceModel->getItems() as $item) {
+                if (empty($priceModel->getCustomerGroupId()->getEndpoint())) {
+                    $result[self::PRICE_TYPE_REGULAR][] = [
+                        'type'            => self::PRICE_TYPE_RETAIL_NET,
+                        'customerGroupId' => self::CUSTOMER_TYPE_MAPPINGS[$priceModel->getCustomerGroupId()->getEndpoint()],
+                        'priceNet'        => $item->getNetPrice(),
+                        'quantity'        => $item->getQuantity(),
+                    ];
+                } else {
+                    $result[self::PRICE_TYPE_REGULAR][] = [
+                        'type'            => self::PRICE_TYPE_REGULAR,
+                        'customerGroupId' => self::CUSTOMER_TYPE_MAPPINGS[$priceModel->getCustomerGroupId()->getEndpoint()],
+                        'priceNet'        => $item->getNetPrice(),
+                        'quantity'        => $item->getQuantity(),
+                    ];
+                }
+            }
+        }
+
+        // 2) Special prices
+        foreach ($product->getSpecialPrices() as $specialModel) {
+            $from = $specialModel->getActiveFromDate()?->format('Y-m-d')   ?? null;
+            $until= $specialModel->getActiveUntilDate()?->format('Y-m-d') ?? null;
+            foreach ($specialModel->getItems() as $item) {
+                $result[self::PRICE_TYPE_SPECIAL][] = [
+                    'type'            => self::PRICE_TYPE_SPECIAL,
+                    'customerGroupId' => self::CUSTOMER_TYPE_MAPPINGS[$item->getCustomerGroupId()->getEndpoint()],
+                    'priceNet'        => $item->getPriceNet(),
+                    'from'            => $from,
+                    'until'           => $until,
                 ];
             }
         }
 
-        return $prices;
+        return $result;
     }
 }
