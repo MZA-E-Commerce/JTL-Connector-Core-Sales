@@ -7,6 +7,7 @@ use Jtl\Connector\Core\Model\AbstractModel;
 use Jtl\Connector\Core\Model\Identity;
 use Jtl\Connector\Core\Model\Product;
 use Jtl\Connector\Core\Model\ProductPrice;
+use Jtl\Connector\Core\Model\QueryFilter;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
@@ -121,7 +122,7 @@ abstract class AbstractController
                 try {
                     $pimcoreId = $this->getPimcoreId($model->getSku());
                 } catch (\Throwable $e) {
-                    $this->logger->error('Error fetching Pimcore ID for SKU '.$model->getSku().': '.$e->getMessage());
+                    $this->logger->error('Error fetching Pimcore ID for SKU ' . $model->getSku() . ': ' . $e->getMessage());
                     continue;
                 }
 
@@ -133,7 +134,7 @@ abstract class AbstractController
             try {
                 $this->updateModel($model);
             } catch (\Throwable $e) {
-                $this->logger->error('Error in updateModel(): '.$e->getMessage());
+                $this->logger->error('Error in updateModel(): ' . $e->getMessage());
             }
 
             $models[$i] = $model;
@@ -197,7 +198,7 @@ abstract class AbstractController
 
             throw new \RuntimeException('Pimcore API error: ' . ($data['error'] ?? 'Unknown error'));
 
-        } catch (TransportExceptionInterface | HttpExceptionInterface | DecodingExceptionInterface $e) {
+        } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
             throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
         }
     }
@@ -211,26 +212,26 @@ abstract class AbstractController
     {
         $httpMethod = $this->config->get('pimcore.api.endpoints.' . $type . '.method');
         $client = $this->getHttpClient();
-$fullApiUrl = $this->getEndpointUrl($type);
+        $fullApiUrl = $this->getEndpointUrl($type);
 
-// Set id of Pimcore product
-$postData = [
-'id' => $product->getId()->getEndpoint()
-];
+        // Set id of Pimcore product
+        $postData = [
+            'id' => $product->getId()->getEndpoint()
+        ];
 
-switch ($type) {
-case self::UPDATE_TYPE_PRODUCT_STOCK_LEVEL:
-    $this->logger->info('Updating product stock level (SKU: ' . $product->getSku() . ')');
-    $postData['stockLevel'] = $product->getStockLevel();
-    break;
-case self::UPDATE_TYPE_PRODUCT_PRICE:
-    $this->logger->info('Updating product price (SKU: ' . $product->getSku() . ')');
-    // Prices
-    $postData['prices'] = $this->getPrices($product);
+        switch ($type) {
+            case self::UPDATE_TYPE_PRODUCT_STOCK_LEVEL:
+                $this->logger->info('Updating product stock level (SKU: ' . $product->getSku() . ')');
+                $postData['stockLevel'] = $product->getStockLevel();
+                break;
+            case self::UPDATE_TYPE_PRODUCT_PRICE:
+                $this->logger->info('Updating product price (SKU: ' . $product->getSku() . ')');
+                // Prices
+                $postData['prices'] = $this->getPrices($product);
 
-    break;
-case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett senden"!
-    $this->logger->info('Updating full product (SKU: ' . $product->getSku() . ')');
+                break;
+            case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett senden"!
+                $this->logger->info('Updating full product (SKU: ' . $product->getSku() . ')');
                 // Prices
                 $postData['prices'] = $this->getPrices($product);
                 // Recommended retail price gross
@@ -244,7 +245,7 @@ case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett send
                 break;
         }
 
-        file_put_contents('/var/www/html/var/log/postData_'.$type.'.log', $httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData) . PHP_EOL . PHP_EOL);
+        file_put_contents('/var/www/html/var/log/postData_' . $type . '.log', $httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData) . PHP_EOL . PHP_EOL);
 
         try {
             $response = $client->request($httpMethod, $fullApiUrl, ['json' => $postData]);
@@ -259,7 +260,7 @@ case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett send
 
             throw new \RuntimeException('Pimcore API error: ' . ($data['error'] ?? 'Unknown error'));
 
-        } catch (TransportExceptionInterface | HttpExceptionInterface | DecodingExceptionInterface $e) {
+        } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
             throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
         }
     }
@@ -350,17 +351,17 @@ case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett send
             foreach ($priceModel->getItems() as $item) {
                 if (empty($priceModel->getCustomerGroupId()->getEndpoint())) {
                     $result[self::PRICE_TYPE_REGULAR][] = [
-                        'type'            => self::PRICE_TYPE_RETAIL_NET,
+                        'type' => self::PRICE_TYPE_RETAIL_NET,
                         'customerGroupId' => self::CUSTOMER_TYPE_MAPPINGS[$priceModel->getCustomerGroupId()->getEndpoint()],
-                        'priceNet'        => $item->getNetPrice(),
-                        'quantity'        => $item->getQuantity(),
+                        'priceNet' => $item->getNetPrice(),
+                        'quantity' => $item->getQuantity(),
                     ];
                 } else {
                     $result[self::PRICE_TYPE_REGULAR][] = [
-                        'type'            => self::PRICE_TYPE_REGULAR,
+                        'type' => self::PRICE_TYPE_REGULAR,
                         'customerGroupId' => self::CUSTOMER_TYPE_MAPPINGS[$priceModel->getCustomerGroupId()->getEndpoint()],
-                        'priceNet'        => $item->getNetPrice(),
-                        'quantity'        => $item->getQuantity(),
+                        'priceNet' => $item->getNetPrice(),
+                        'quantity' => $item->getQuantity(),
                     ];
                 }
             }
@@ -368,15 +369,15 @@ case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett send
 
         // 2) Special prices
         foreach ($product->getSpecialPrices() as $specialModel) {
-            $from = $specialModel->getActiveFromDate()?->format('Y-m-d')   ?? null;
-            $until= $specialModel->getActiveUntilDate()?->format('Y-m-d') ?? null;
+            $from = $specialModel->getActiveFromDate()?->format('Y-m-d') ?? null;
+            $until = $specialModel->getActiveUntilDate()?->format('Y-m-d') ?? null;
             foreach ($specialModel->getItems() as $item) {
                 $result[self::PRICE_TYPE_SPECIAL][] = [
-                    'type'            => self::PRICE_TYPE_SPECIAL,
+                    'type' => self::PRICE_TYPE_SPECIAL,
                     'customerGroupId' => self::CUSTOMER_TYPE_MAPPINGS[$item->getCustomerGroupId()->getEndpoint()],
-                    'priceNet'        => $item->getPriceNet(),
-                    'from'            => $from,
-                    'until'           => $until,
+                    'priceNet' => $item->getPriceNet(),
+                    'from' => $from,
+                    'until' => $until,
                 ];
             }
         }
