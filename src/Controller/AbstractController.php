@@ -28,12 +28,21 @@ abstract class AbstractController
     public const CUSTOMER_TYPE_B2C = 'c2c6154f05b342d4b2da85e51ec805c9';
 
     /**
-     * @var string
+     * @var array
      */
     public const CUSTOMER_TYPE_MAPPINGS = [
         self::CUSTOMER_TYPE_B2B => 'B2B',
         self::CUSTOMER_TYPE_B2C => 'B2C',
         '' => 'CUSTOMER_TYPE_NOT_SET'
+    ];
+
+    /**
+     * @var array
+     */
+    public const CUSTOMER_TYPE_MAPPINGS_REVERSE = [
+        'B2B' => self::CUSTOMER_TYPE_B2B,
+        'B2C' => self::CUSTOMER_TYPE_B2C,
+        'CUSTOMER_TYPE_NOT_SET' => ''
     ];
 
     /**

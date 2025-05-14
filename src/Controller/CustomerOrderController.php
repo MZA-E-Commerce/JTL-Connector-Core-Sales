@@ -9,21 +9,18 @@ use Jtl\Connector\Core\Model\CustomerOrderShippingAddress;
 use Jtl\Connector\Core\Model\Identity;
 use Jtl\Connector\Core\Model\Product;
 use Jtl\Connector\Core\Model\QueryFilter;
-use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
 class CustomerOrderController extends AbstractController implements PullInterface
 {
     public function pull(QueryFilter $queryFilter): array
     {
-        file_put_contents('/var/www/html/var/log/orderPull.log', json_encode($queryFilter) . PHP_EOL . PHP_EOL);
-
-        $endpointUrl = $this->getEndpointUrl('customerOrder');
+        $endpointUrl = $this->getEndpointUrl('getOrders');
         $client = $this->getHttpClient();
 
+        $orders = [];
+
         try {
-            $response = $client->request('GET', $endpointUrl, ['json' => $queryFilter]);
+            $response = $client->request('GET', $endpointUrl);
 
             $statusCode = $response->getStatusCode();
             $data = $response->toArray();
@@ -33,7 +30,6 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 return [];
             }
 
-            $orders = [];
             foreach ($data['orders'] as $orderData) {
                 $email = $orderData['customer']['email'];
 
@@ -44,7 +40,7 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 $order->setLanguageIso('de');
                 $order->setCurrencyIso($orderData['currencyIso']);
                 $order->setCreationDate(\DateTime::createFromFormat('U', $orderData['orderDateUnix']));
-                $order->setCustomerNote($orderData['customerComment']);
+                $order->setCustomerNote($orderData['customerComment']??'');
 
                 // Special case!
                 // e.g. ANP_SONDERPREIS=0|ANP_BEIGABE=0|ANP_KREDITKAUF=0
@@ -56,11 +52,12 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 $shippingAddress->setCountryIso($orderData['delivery']['country']);
                 $shippingAddress->setFirstName($orderData['delivery']['firstName']);
                 $shippingAddress->setLastName($orderData['delivery']['lastName']);
-                $shippingAddress->setCompany($orderData['delivery']['company']);
+                $shippingAddress->setCompany($orderData['delivery']['company']??'');
                 $shippingAddress->setCity($orderData['delivery']['city']);
                 $shippingAddress->setStreet($orderData['delivery']['street']);
                 $shippingAddress->setZipCode($orderData['delivery']['zip']);
                 $shippingAddress->setEMail($email);
+                $shippingAddress->setCustomerId(new Identity($orderData['customer']['id']??'', 0));
                 $order->setShippingAddress($shippingAddress);
 
                 // Billing address
@@ -68,7 +65,7 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 $billingAddress->setCountryIso($orderData['customer']['country']);
                 $billingAddress->setFirstName($orderData['customer']['firstName']);
                 $billingAddress->setLastName($orderData['customer']['lastName']);
-                $billingAddress->setCompany($orderData['customer']['company']);
+                $billingAddress->setCompany($orderData['customer']['company']??'');
                 $billingAddress->setCity($orderData['customer']['city']);
                 $billingAddress->setStreet($orderData['customer']['street']);
                 $billingAddress->setZipCode($orderData['customer']['zip']);
@@ -88,10 +85,13 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                     $order->addItem($customerOrderItem);
                 }
 
+                $order->setTotalSum($orderData['totalSum']);
+                $order->setTotalSumGross($orderData['totalSumGross']);
+
                 $orders[] = $order;
             }
 
-        } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
+        } catch (\Throwable $e) {
             throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
         }
 
