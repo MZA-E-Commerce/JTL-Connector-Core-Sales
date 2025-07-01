@@ -327,8 +327,6 @@ class Application
     {
         $jtlRpc = Validate::string($this->httpRequest->get('jtlrpc', ''));
 
-        file_put_contents('/var/www/html/var/log/rpc_in.log', $jtlRpc . PHP_EOL . PHP_EOL, FILE_APPEND);
-
         $this->httpResponse->setLogger($this->loggerService->get(LoggerService::CHANNEL_RPC));
         $this->eventDispatcher->addSubscriber(new RequestParamsTransformSubscriber());
         $this->eventDispatcher->addSubscriber(new FeaturesSubscriber());
@@ -420,8 +418,6 @@ class Application
                 $this->getSessionHandler()->gc((int)\ini_get('session.gc_maxlifetime'));
             }
         }
-
-        file_put_contents('/var/www/html/var/log/rpc_in.log', '##############################################' . PHP_EOL . PHP_EOL, FILE_APPEND);
     }
 
     /**

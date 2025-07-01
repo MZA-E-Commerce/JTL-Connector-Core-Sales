@@ -2,12 +2,11 @@
 
 namespace Jtl\Connector\Core\Controller;
 
+use DateTimeZone;
 use Jtl\Connector\Core\Config\CoreConfigInterface;
 use Jtl\Connector\Core\Model\AbstractModel;
 use Jtl\Connector\Core\Model\Identity;
 use Jtl\Connector\Core\Model\Product;
-use Jtl\Connector\Core\Model\ProductPrice;
-use Jtl\Connector\Core\Model\QueryFilter;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
@@ -25,14 +24,29 @@ abstract class AbstractController
     /**
      * @var string
      */
+    public const CUSTOMER_TYPE_B2B_DROPSHIPPING = '323ab1d7bf0b80017719d8404cbe4d46';
+
+    /**
+     * @var string
+     */
     public const CUSTOMER_TYPE_B2C = 'c2c6154f05b342d4b2da85e51ec805c9';
+
+    /**
+     * @var string
+     */
+    public const CUSTOMER_TYPE_B2B_DS_SHORTCUT = 'B2B-DS';
+
+    public const CUSTOMER_TYPE_B2B_SHORTCUT = 'B2B';
+
+    public const CUSTOMER_TYPE_B2C_SHORTCUT = 'B2C';
 
     /**
      * @var array
      */
     public const CUSTOMER_TYPE_MAPPINGS = [
-        self::CUSTOMER_TYPE_B2B => 'B2B',
-        self::CUSTOMER_TYPE_B2C => 'B2C',
+        self::CUSTOMER_TYPE_B2B => self::CUSTOMER_TYPE_B2B_SHORTCUT,
+        self::CUSTOMER_TYPE_B2B_DROPSHIPPING => self::CUSTOMER_TYPE_B2B_DS_SHORTCUT,
+        self::CUSTOMER_TYPE_B2C => self::CUSTOMER_TYPE_B2C_SHORTCUT,
         '' => 'CUSTOMER_TYPE_NOT_SET'
     ];
 
@@ -40,8 +54,9 @@ abstract class AbstractController
      * @var array
      */
     public const CUSTOMER_TYPE_MAPPINGS_REVERSE = [
-        'B2B' => self::CUSTOMER_TYPE_B2B,
-        'B2C' => self::CUSTOMER_TYPE_B2C,
+        self::CUSTOMER_TYPE_B2B_SHORTCUT => self::CUSTOMER_TYPE_B2B,
+        self::CUSTOMER_TYPE_B2B_DS_SHORTCUT => self::CUSTOMER_TYPE_B2B_DROPSHIPPING,
+        self::CUSTOMER_TYPE_B2C_SHORTCUT => self::CUSTOMER_TYPE_B2C,
         'CUSTOMER_TYPE_NOT_SET' => ''
     ];
 
@@ -63,22 +78,17 @@ abstract class AbstractController
     /**
      * @var string
      */
-    protected const CUSTOMER_TYPE_DEFAULT = self::CUSTOMER_TYPE_B2C;
+    protected const UPDATE_TYPE_CUSTOMER_ORDERS = 'geCustomerOrders';
 
     /**
      * @var string
      */
-    protected const PRICE_TYPE_RETAIL_NET = 'retail_price_net';
+    const STUECKPREIS = 'stueckpreis';
 
     /**
      * @var string
      */
-    protected const PRICE_TYPE_REGULAR = 'regular';
-
-    /**
-     * @var string
-     */
-    protected const PRICE_TYPE_SPECIAL = 'special';
+    const SONDERPREIS = 'sonderpreis';
 
     /**
      * @var CoreConfigInterface
@@ -127,15 +137,18 @@ abstract class AbstractController
                     $identity->getEndpoint()
                 ));
             } else {
-                // Get Pimcore ID
+                // Get Endpoint ID
                 try {
-                    $pimcoreId = $this->getPimcoreId($model->getSku());
+                    $endpointId = $this->getEndpointId($model->getSku());
+                    if (empty($endpointId)) {
+                        throw new \Exception('Invalid/empty endpoint ID (SKU)');
+                    }
                 } catch (\Throwable $e) {
-                    $this->logger->error('Error fetching Pimcore ID for SKU ' . $model->getSku() . ': ' . $e->getMessage());
+                    $this->logger->error('Error fetching Endpoint ID for SKU ' . $model->getSku() . ': ' . $e->getMessage());
                     continue;
                 }
 
-                $identity = new Identity($pimcoreId, $identity->getHost());
+                $identity = new Identity($endpointId, $identity->getHost());
                 $model->setId($identity);
             }
 
@@ -158,13 +171,13 @@ abstract class AbstractController
      */
     protected function getEndpointUrl(string $endpointKey): string
     {
-        $apiKey = $this->config->get('pimcore.api.key');
+        $apiKey = $this->config->get('endpoint.api.key');
         if (empty($apiKey)) {
-            throw new \RuntimeException('Pimcore API key is not set');
+            throw new \RuntimeException('Endpoint API key is not set');
         }
 
-        $url = $this->config->get('pimcore.api.url');
-        return $url . $this->config->get('pimcore.api.endpoints.' . $endpointKey . '.url');
+        $url = $this->config->get('endpoint.api.url');
+        return $url . $this->config->get('endpoint.api.endpoints.' . $endpointKey . '.url');
     }
 
     /**
@@ -175,41 +188,22 @@ abstract class AbstractController
         $client = HttpClient::create();
         return $client->withOptions([
             'headers' => [
-                'X-API-KEY' => $this->config->get('pimcore.api.key'),
+                'X-Api-Key' => $this->config->get('endpoint.api.key'),
+                'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
             ],
+            //'auth_basic' => [$this->config->get('endpoint.api.auth.username'), $this->config->get('endpoint.api.auth.password')]
         ]);
     }
 
     /**
      * @param string $sku
-     * @return int
+     * @return string
      */
-    protected function getPimcoreId(string $sku): int
+    protected function getEndpointId(string $sku): string
     {
-        if (empty($sku)) {
-            throw new \RuntimeException('SKU is empty');
-        }
+        return $sku;
 
-        $url = $this->getEndpointUrl('getId');
-        $fullApiUrl = str_replace('{sku}', $sku, $url);
-        $client = $this->getHttpClient();
-
-        try {
-            $response = $client->request($this->config->get('pimcore.api.endpoints.getId.method'), $fullApiUrl);
-
-            $statusCode = $response->getStatusCode();
-            $data = $response->toArray();
-
-            if ($statusCode === 200 && isset($data['success']) && $data['success'] === true) {
-                return (int)$data['id'];
-            }
-
-            throw new \RuntimeException('Pimcore API error: ' . ($data['error'] ?? 'Unknown error'));
-
-        } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
-            throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
-        }
     }
 
     /**
@@ -217,60 +211,79 @@ abstract class AbstractController
      * @param string $type
      * @return void
      */
-    protected function updateProductPimcore(Product $product, string $type = self::UPDATE_TYPE_PRODUCT): void
+    protected function updateProductEndpoint(Product $product, string $type = self::UPDATE_TYPE_PRODUCT): void
     {
-        $httpMethod = $this->config->get('pimcore.api.endpoints.' . $type . '.method');
+        $httpMethod = $this->config->get('endpoint.api.endpoints.' . $type . '.method');
         $client = $this->getHttpClient();
         $fullApiUrl = $this->getEndpointUrl($type);
 
-        // Set id of Pimcore product
-        $postData = [
-            'id' => $product->getId()->getEndpoint()
-        ];
+        $fullApiUrl = str_replace('{sku}', $product->getSku(), $fullApiUrl);
+
+        $postData = [];
+        $postDataPrices = [];
+        $priceTypes = $this->config->get('priceTypes');
 
         switch ($type) {
             case self::UPDATE_TYPE_PRODUCT_STOCK_LEVEL:
                 $this->logger->info('Updating product stock level (SKU: ' . $product->getSku() . ')');
-                $postData['stockLevel'] = $product->getStockLevel();
+                $postData['artikelNr'] = $product->getId()->getEndpoint();
+                $postData['lagerbestand'] = $product->getStockLevel();
                 break;
             case self::UPDATE_TYPE_PRODUCT_PRICE:
-                $this->logger->info('Updating product price (SKU: ' . $product->getSku() . ')');
-                // Prices
-                $postData['prices'] = $this->getPrices($product);
-
-                break;
-            case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett senden"!
-                $this->logger->info('Updating full product (SKU: ' . $product->getSku() . ')');
-                // Prices
-                $postData['prices'] = $this->getPrices($product);
-                // Recommended retail price gross
-                $postData['uvpGross'] = round($product->getRecommendedRetailPrice(), 4, PHP_ROUND_HALF_UP);
-                // Recommended retail price net
-                $postData['uvpNet'] = round($product->getRecommendedRetailPrice() * (1 + ($product->getVat() / 100)), 4, PHP_ROUND_HALF_UP);
-                // Tax rate
-                $postData['taxRate'] = $product->getVat();
-
-                $this->logger->info('Updating product in Pimcore (SKU: ' . $product->getSku() . ')');
+                $this->logger->info('Updating product prices (SKU: ' . $product->getSku() . ')');
+                $postDataPrices = $this->getPrices($product, $priceTypes);
                 break;
         }
 
-        file_put_contents('/var/www/html/var/log/postData_' . $type . '.log', $httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData) . PHP_EOL . PHP_EOL);
+        if (!empty($postDataPrices)) {
+            foreach ($postDataPrices as $endpointType => $data) {
 
-        try {
-            $response = $client->request($httpMethod, $fullApiUrl, ['json' => $postData]);
+                $fullApiUrl1 = str_replace('{endpointType}', $endpointType, $fullApiUrl);
 
-            $statusCode = $response->getStatusCode();
-            $responseData = $response->toArray();
+                foreach ($data as $priceType => $jsonData) {
 
-            if ($statusCode === 200 && isset($responseData['success']) && $responseData['success'] === true) {
-                $this->logger->info('Product updated successfully in Pimcore (SKU: ' . $product->getSku() . ')');
-                return;
+                    $fullApiUrl2 = str_replace('{priceType}', $priceType, $fullApiUrl1);
+
+                    $this->logger->info($httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData));
+
+                    try {
+                        $response = $client->request($httpMethod, $fullApiUrl2, ['json' => $jsonData]);
+                        $statusCode = $response->getStatusCode();
+                        $responseData = $response->toArray();
+
+                        if ($statusCode === 200 && isset($responseData['artikelNr']) && $responseData['artikelNr'] === $product->getSku()) {
+                            $this->logger->info('Product price updated successfully (SKU: ' . $product->getSku() . ')');
+                            continue;
+                        }
+
+                        throw new \RuntimeException('API error: ' . ($data['error'] ?? 'Unknown error'));
+
+                    } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
+                        throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
+                    }
+                }
             }
+        }
 
-            throw new \RuntimeException('Pimcore API error: ' . ($data['error'] ?? 'Unknown error'));
+        if (!empty($postData)) {
+            try {
 
-        } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
-            throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
+                $this->logger->info($httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData));
+
+                $response = $client->request($httpMethod, $fullApiUrl, ['json' => $postData]);
+                $statusCode = $response->getStatusCode();
+                $responseData = $response->toArray();
+
+                if ($statusCode === 200 && isset($responseData['artikelNr']) && $responseData['artikelNr'] === $product->getSku()) {
+                    $this->logger->info('Product updated successfully (SKU: ' . $product->getSku() . ')');
+                    return;
+                }
+
+                throw new \RuntimeException('API error: ' . ($data['error'] ?? 'Unknown error'));
+
+            } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
+                throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
+            }
         }
     }
 
@@ -282,111 +295,50 @@ abstract class AbstractController
 
     /**
      * @param Product $product
+     * @param array $priceTypes
      * @return array
      */
-    private function getPrices(Product $product): array
+    private function getPrices(Product $product, array $priceTypes): array
     {
-        /**
-         * $specialPrices = false - UPDATE_TYPE_PRODUCT_PRICE ("productPrice.push")
-         *
-         * [
-         * {
-         * "type": "regular",
-         * "customerGroupId": "B2C",
-         * "priceNet": 4,
-         * "quantity": 0
-         * },
-         * {
-         * "type": "regular",
-         * "customerGroupId": "B2B",
-         * "priceNet": 5,
-         * "quantity": 0
-         * },
-         * {
-         * "type": "regular",
-         * "customerGroupId": "CUSTOMER_TYPE_NOT_SET",
-         * "priceNet": 7,
-         * "quantity": 0
-         * }
-         * ]
-         */
-
-        /**
-         * $specialPrices = true - UPDATE_TYPE_PRODUCT ("product.push")
-         *
-         * [
-         * {
-         * "type": "regular",
-         * "customerGroupId": "B2C",
-         * "priceNet": 4,
-         * "quantity": 0
-         * },
-         * {
-         * "type": "regular",
-         * "customerGroupId": "B2B",
-         * "priceNet": 5,
-         * "quantity": 0
-         * },
-         * {
-         * "type": "regular",
-         * "customerGroupId": "CUSTOMER_TYPE_NOT_SET",
-         * "priceNet": 7,
-         * "quantity": 0
-         * },
-         * {
-         * "type": "special",
-         * "customerGroupId": "B2C",
-         * "priceNet": 10,
-         * "from": "2025-05-01",
-         * "until": "2025-05-22"
-         * },
-         * {
-         * "type": "special",
-         * "customerGroupId": "B2B",
-         * "priceNet": 11,
-         * "from": "2025-05-01",
-         * "until": "2025-05-22"
-         * }
-         * ]
-         */
-
-        $result = [
-            self::PRICE_TYPE_REGULAR => [],
-            self::PRICE_TYPE_SPECIAL => []
-        ];
+        $result = [];
 
         // 1) regular prices
         foreach ($product->getPrices() as $priceModel) {
+            $priceType = match ($priceModel->getCustomerGroupId()->getEndpoint()) {
+                self::CUSTOMER_TYPE_B2B => $priceTypes[self::CUSTOMER_TYPE_B2B_SHORTCUT],
+                self::CUSTOMER_TYPE_B2B_DROPSHIPPING => $priceTypes[self::CUSTOMER_TYPE_B2B_DS_SHORTCUT],
+                self::CUSTOMER_TYPE_B2C => $priceTypes[self::CUSTOMER_TYPE_B2C_SHORTCUT],
+                default => $priceTypes['UPE'], // "Netto VK" field from JTL WaWi
+            };
             foreach ($priceModel->getItems() as $item) {
-                if (empty($priceModel->getCustomerGroupId()->getEndpoint())) {
-                    $result[self::PRICE_TYPE_REGULAR][] = [
-                        'type' => self::PRICE_TYPE_RETAIL_NET,
-                        'customerGroupId' => self::CUSTOMER_TYPE_MAPPINGS[$priceModel->getCustomerGroupId()->getEndpoint()],
-                        'priceNet' => $item->getNetPrice(),
-                        'quantity' => $item->getQuantity(),
-                    ];
-                } else {
-                    $result[self::PRICE_TYPE_REGULAR][] = [
-                        'type' => self::PRICE_TYPE_REGULAR,
-                        'customerGroupId' => self::CUSTOMER_TYPE_MAPPINGS[$priceModel->getCustomerGroupId()->getEndpoint()],
-                        'priceNet' => $item->getNetPrice(),
-                        'quantity' => $item->getQuantity(),
-                    ];
-                }
+                $result[self::STUECKPREIS][$priceType] = [
+                    "value" => $item->getNetPrice(),
+                ];
             }
         }
 
         // 2) Special prices
         foreach ($product->getSpecialPrices() as $specialModel) {
-            $from = $specialModel->getActiveFromDate()?->format('Y-m-d') ?? null;
-            $until = $specialModel->getActiveUntilDate()?->format('Y-m-d') ?? null;
             foreach ($specialModel->getItems() as $item) {
-                $result[self::PRICE_TYPE_SPECIAL][] = [
-                    'type' => self::PRICE_TYPE_SPECIAL,
-                    'customerGroupId' => self::CUSTOMER_TYPE_MAPPINGS[$item->getCustomerGroupId()->getEndpoint()],
-                    'priceNet' => $item->getPriceNet(),
-                    'from' => $from,
-                    'until' => $until,
+
+                $priceType = match ($item->getCustomerGroupId()->getEndpoint()) {
+                    self::CUSTOMER_TYPE_B2B => $priceTypes[self::CUSTOMER_TYPE_B2B_SHORTCUT],
+                    self::CUSTOMER_TYPE_B2B_DROPSHIPPING => $priceTypes[self::CUSTOMER_TYPE_B2B_DS_SHORTCUT],
+                    self::CUSTOMER_TYPE_B2C => $priceTypes[self::CUSTOMER_TYPE_B2C_SHORTCUT],
+                    default => null,
+                };
+
+                if (!$priceType) {
+                    continue;
+                }
+
+                $from = ($dt = (clone $specialModel->getActiveFromDate())?->setTimezone(new DateTimeZone('UTC')))->format('Y-m-d\TH:i:s.') . substr($dt->format('u'), 0, 3) . 'Z';
+                $until = ($dt = (clone $specialModel->getActiveUntilDate())?->setTimezone(new DateTimeZone('UTC')))->format('Y-m-d\TH:i:s.') . substr($dt->format('u'), 0, 3) . 'Z';
+
+                $result[self::SONDERPREIS][$priceType] = [
+                    "value" => $item->getPriceNet(),
+                    "von" => $from,
+                    "bis" => $until
                 ];
             }
         }
