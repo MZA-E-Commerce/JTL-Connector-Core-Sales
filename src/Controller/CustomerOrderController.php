@@ -81,7 +81,7 @@ class CustomerOrderController extends AbstractController implements PullInterfac
 
                 $attributeCustomerGroup = new KeyValueAttribute();
                 $attributeCustomerGroup->setKey('customerGroup');
-                $attributeCustomerGroup->setValue(self::CUSTOMER_TYPE_B2B_DS_SHORTCUT);
+                $attributeCustomerGroup->setValue(self::CUSTOMER_TYPE_B2B);
                 $order->addAttribute($attributeCustomerGroup);
 
                 // Shipping address
