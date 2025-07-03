@@ -213,6 +213,7 @@ abstract class AbstractController
                     $serverName = $_SERVER['SERVER_NAME'] ?? gethostname();
                     if ($serverName == 'jtl-connector.docker') {
                         file_put_contents('/var/www/html/var/log/urls.log', 'API URLS 
+                            | Date: ' . date('d.m.Y H:i:s') . ' 
                             | Method: ' . $httpMethod . ' 
                             | URL: ' . $fullApiUrl2 . ' 
                             | Data: ' . print_r($jsonData, true) . PHP_EOL . PHP_EOL, FILE_APPEND);
@@ -279,13 +280,16 @@ abstract class AbstractController
     private function getPrices(Product $product, array $priceTypes): array
     {
         $result = [];
-
         // 1) regular prices
         foreach ($product->getPrices() as $priceModel) {
-            $priceType = match ($priceModel->getCustomerGroupId()->getEndpoint()) {
-                self::CUSTOMER_TYPE_B2B => $priceTypes[self::CUSTOMER_TYPE_B2B_SHORTCUT],
-                default => $priceTypes['UPE'], // "Netto VK" field from JTL WaWi
-            };
+            switch ($priceModel->getCustomerGroupId()->getEndpoint()) {
+                case self::CUSTOMER_TYPE_B2B:
+                    $priceType = $priceTypes[self::CUSTOMER_TYPE_B2B_SHORTCUT];
+                    break;
+                case '':
+                    $priceType = $priceTypes['UPE'];
+            }
+
             foreach ($priceModel->getItems() as $item) {
                 $result[self::STUECKPREIS][$priceType] = [
                     "value" => $item->getNetPrice(),
