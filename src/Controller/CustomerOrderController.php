@@ -124,8 +124,6 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                     $customerOrderItem->setType(CustomerOrderItem::TYPE_PRODUCT);
                     if (!empty($item['artikelBezeichnung'])) {
                         $customerOrderItem->setName($item['artikelBezeichnung']);
-                    } else {
-                        $customerOrderItem->setName('[remove fallback] Artikel: ' . $item['artikelNr']);
                     }
                     $customerOrderItem->setQuantity($item['anzahl']);
                     $customerOrderItem->setPrice($item['haendlerpreis']); // net price including discount
