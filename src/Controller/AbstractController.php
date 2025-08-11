@@ -198,6 +198,11 @@ abstract class AbstractController
                 break;
         }
 
+        file_put_contents('/var/www/html/var/log/prices.log', 'PRICES 
+                            | Date: ' . date('d.m.Y H:i:s') . ' 
+                            | Data: ' . print_r($postDataPrices, true) . PHP_EOL . PHP_EOL, FILE_APPEND);
+
+return;
         if (!empty($postDataPrices)) {
 
             foreach ($postDataPrices as $endpointType => $data) {
@@ -285,20 +290,25 @@ abstract class AbstractController
     private function getPrices(Product $product, array $priceTypes): array
     {
         $result = [];
+
+        $vat = $product->getVat();
+        $uvpNet = $product->getRecommendedRetailPrice();
+        $uvpGross = $uvpNet * (1 + $vat / 100);
+
+        $result[self::STUECKPREIS][$priceTypes['UPE']] = [
+            "value" => round($uvpGross, 4)
+        ];
+
         // 1) regular prices
         foreach ($product->getPrices() as $priceModel) {
-            switch ($priceModel->getCustomerGroupId()->getEndpoint()) {
-                case self::CUSTOMER_TYPE_B2B:
-                    $priceType = $priceTypes[self::CUSTOMER_TYPE_B2B_SHORTCUT];
+            if ($priceModel->getCustomerGroupId()->getEndpoint() == self::CUSTOMER_TYPE_B2B) {
+                $priceType = $priceTypes[self::CUSTOMER_TYPE_B2B_SHORTCUT];
+                foreach ($priceModel->getItems() as $item) {
+                    $result[self::STUECKPREIS][$priceType] = [
+                        "value" => $item->getNetPrice(),
+                    ];
                     break;
-                case '':
-                    $priceType = $priceTypes['UPE'];
-            }
-
-            foreach ($priceModel->getItems() as $item) {
-                $result[self::STUECKPREIS][$priceType] = [
-                    "value" => $item->getNetPrice(),
-                ];
+                }
             }
         }
 
