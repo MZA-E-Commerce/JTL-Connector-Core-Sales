@@ -30,8 +30,8 @@ jobs:
         env:
           DEPLOYMENT_SSH_SERVER: p689712.mittwaldserver.info
           DEPLOYMENT_SSH_USER: p689712
-          DEPLOYMENT_REPOPATH: /home/www/p689712/html/prod.jtl-connector-haendlershop/.git
-          DEPLOYMENT_WORKTREE: /home/www/p689712/html/prod.jtl-connector-haendlershop
+          DEPLOYMENT_REPOPATH: /home/www/p689712/html/prod.jtl-connector-sales/.git
+          DEPLOYMENT_WORKTREE: /home/www/p689712/html/prod.jtl-connector-sales
           COMPOSER_COMMAND: "/usr/local/bin/php /usr/local/bin/composer"
 
       - name: "Deploy to Testsystem (dev branch)"
@@ -40,6 +40,6 @@ jobs:
         env:
           DEPLOYMENT_SSH_SERVER: p689712.mittwaldserver.info
           DEPLOYMENT_SSH_USER: p689712
-          DEPLOYMENT_REPOPATH: /home/www/p689712/html/jtl-connector-haendlershop/.git
-          DEPLOYMENT_WORKTREE: /home/www/p689712/html/jtl-connector-haendlershop
+          DEPLOYMENT_REPOPATH: /home/www/p689712/html/jtl-connector-sales/.git
+          DEPLOYMENT_WORKTREE: /home/www/p689712/html/jtl-connector-sales
           COMPOSER_COMMAND: "/usr/local/bin/php /usr/local/bin/composer"

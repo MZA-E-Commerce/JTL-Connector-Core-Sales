@@ -1,35 +1,35 @@
 services:
-  jtl-connector-distributor-nginx:
+  jtl-connector-sales-nginx:
     networks:
       - default
       - shared-net
     image: nginx:latest
-    container_name: jtl-connector-distributor-nginx
+    container_name: jtl-connector-sales-nginx
     ports:
-      - "8282:80"
+      - "8484:80"
     volumes:
       - ./:/var/www/html
       - ./.docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
-      - jtl-connector-distributor-php
+      - jtl-connector-sales-php
 
-  jtl-connector-distributor-php:
+  jtl-connector-sales-php:
     networks:
       - default
       - shared-net
     build:
       context: ./.docker/php
-    container_name: jtl-connector-distributor-php
+    container_name: jtl-connector-sales-php
     volumes:
       - ./:/var/www/html
     expose:
       - "9000"
     depends_on:
-      - jtl-connector-distributor-db
+      - jtl-connector-sales-db
 
-  jtl-connector-distributor-db:
+  jtl-connector-sales-db:
     image: mysql:8.0
-    container_name: jtl-connector-distributor-mysql
+    container_name: jtl-connector-sales-mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ROOT
