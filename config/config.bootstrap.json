@@ -6,6 +6,7 @@
     "password": "jtl-connector"
   },
   "token": "1234567890",
+  "setOrderCustomerNumber": false,
   "pimcore": {
     "api": {
       "url": "http://mza-nginx/api/jtl/connector",

@@ -21,6 +21,9 @@ abstract class AbstractController
      */
     public const CUSTOMER_TYPE_B2B = 'b1d7b4cbe4d846f0b323a9d840800177';
 
+    /**
+     * @var string
+     */
     public const CUSTOMER_TYPE_B2B_SHORTCUT = 'MZA B2B';
 
     /**
@@ -41,7 +44,7 @@ abstract class AbstractController
     /**
      * @var string
      */
-    protected const UPDATE_TYPE_CUSTOMER_ORDERS = 'geCustomerOrders';
+    protected const UPDATE_TYPE_CUSTOMER_ORDERS = 'getCustomerOrders';
 
     /**
      * @var string
@@ -52,6 +55,11 @@ abstract class AbstractController
      * @var string
      */
     const SONDERPREIS = 'sonderpreis';
+
+    const MAPPING_TAX_CLASSES = [
+        '1' => 19,
+        '2' => 7,
+    ];
 
     /**
      * @var CoreConfigInterface
@@ -194,71 +202,79 @@ abstract class AbstractController
                 break;
             case self::UPDATE_TYPE_PRODUCT_PRICE:
                 $this->logger->info('Updating product prices (SKU: ' . $product->getSku() . ')');
-                $postDataPrices = $this->getPrices($product, $priceTypes);
+
+                break;
+            case self::UPDATE_TYPE_PRODUCT:
+                $this->logger->info('Updating product data (SKU: ' . $product->getSku() . ')');
+
+                $useGrossPrices = $this->config->get('useGrossPrices');
+                if ($useGrossPrices) {
+                    $tmpUpeData = [];
+                    $uvpNet = $product->getRecommendedRetailPrice();
+                    if (!is_null($uvpNet)) {
+                        $vat = $product->getVat();
+                        $uvpGross = $uvpNet * (1 + $vat / 100);
+                        $tmpUpeData[self::STUECKPREIS][$priceTypes['UPE']] = [
+                            "value" => round($uvpGross, 4)
+                        ];
+                    }
+                } else {
+                    $tmpUpeData[self::STUECKPREIS][$priceTypes['UPE']] = [
+                        "value" => $product->getRecommendedRetailPrice()
+                    ];
+                }
+                // $postDataPrices = $this->getPrices($product, $priceTypes);
+                // For DS only VK20 (UPE as net price is relevant)
+                $postDataPrices = array_merge_recursive($tmpUpeData, $postDataPrices);
                 break;
         }
 
-        file_put_contents('/var/www/html/var/log/prices.log', 'PRICES 
-                            | Date: ' . date('d.m.Y H:i:s') . ' 
-                            | Data: ' . print_r($postDataPrices, true) . PHP_EOL . PHP_EOL, FILE_APPEND);
-
-return;
         if (!empty($postDataPrices)) {
 
-            foreach ($postDataPrices as $endpointType => $data) {
+            $postDataPrices = $this->convert($postDataPrices, $product->getSku(), $product->getVat());
 
-                $fullApiUrl1 = str_replace('{endpointType}', $endpointType, $fullApiUrl);
-
-                foreach ($data as $priceType => $jsonData) {
-
-                    $fullApiUrl2 = str_replace('{priceType}', $priceType, $fullApiUrl1);
-
-                    $this->logger->info('API URLS | Method: ' . $httpMethod . ' | URL: ' . $fullApiUrl2 . ' | Data: ' . json_encode($jsonData));
-
-                    $serverName = $_SERVER['SERVER_NAME'] ?? gethostname();
-                    if ($serverName == 'jtl-connector.docker') {
-                        file_put_contents('/var/www/html/var/log/urls.log', 'API URLS 
+            $serverName = $_SERVER['SERVER_NAME'] ?? gethostname();
+            if ($serverName == 'jtl-connector.docker') {
+                file_put_contents('/var/www/html/var/log/postDataPrices.log', 'PostData: 
                             | Date: ' . date('d.m.Y H:i:s') . ' 
                             | Method: ' . $httpMethod . ' 
-                            | URL: ' . $fullApiUrl2 . ' 
-                            | Data: ' . print_r($jsonData, true) . PHP_EOL . PHP_EOL, FILE_APPEND);
-                    } else {
-                        file_put_contents('/home/www/p689712/html/jtl-connector-haendlershop/var/log/urls.log', 'API URLS 
+                            | Type: ' . $type . ' 
+                            | URL: ' . $fullApiUrl . ' 
+                            | Data: ' . print_r($postDataPrices, true) . PHP_EOL . PHP_EOL, FILE_APPEND);
+            } else {
+                file_put_contents('/home/www/p689712/html/jtl-connector-sales/var/log/postDataPrices.log', 'PostData: 
                             | Date: ' . date('d.m.Y H:i:s') . ' 
                             | Method: ' . $httpMethod . ' 
-                            | URL: ' . $fullApiUrl2 . ' 
-                            | Data: ' . print_r($jsonData, true) . PHP_EOL . PHP_EOL, FILE_APPEND);
-                    }
+                            | Type: ' . $type . ' 
+                            | URL: ' . $fullApiUrl . ' 
+                            | Data: ' . print_r($postDataPrices, true) . PHP_EOL . PHP_EOL, FILE_APPEND);
+            }
 
-                    if ($jsonData['value'] <= 0) {
-                        $this->logger->info('Skipping update for price type ' . $priceType . ' with value ' . $jsonData['value'] . ' (SKU: ' . $product->getSku() . ')');
-                        continue;
-                    }
+            if ($postDataPrices['stueckpreis'] <= 0) {
+                $this->logger->info('Skipping update for price type ' . $postDataPrices['bezeichnung'] . ' with value ' . $postDataPrices['stueckpreis'] . ' (SKU: ' . $product->getSku() . ')');
+                return;
+            }
 
-                    try {
-                        $response = $client->request($httpMethod, $fullApiUrl2, ['json' => $jsonData]);
-                        $statusCode = $response->getStatusCode();
-                        $responseData = $response->toArray();
+            try {
+                $response = $client->request($httpMethod, $fullApiUrl, ['json' => $postDataPrices]);
+                $statusCode = $response->getStatusCode();
+                $responseData = $response->toArray();
 
-                        if ($statusCode === 200 && isset($responseData['artikelNr']) && $responseData['artikelNr'] === $product->getSku()) {
-                            $this->logger->info('Product price updated successfully (SKU: ' . $product->getSku() . ')');
-                            continue;
-                        }
-
-                        throw new \RuntimeException('API error: ' . ($data['error'] ?? 'Unknown error'));
-
-                    } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
-                        throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
-                    }
+                if ($statusCode === 200 && isset($responseData['data']['transferID']) && $responseData['data']['artikelNr'] === $product->getSku()) {
+                    $this->logger->info('Product price updated successfully (SKU: ' . $product->getSku() . ')');
+                    return;
                 }
+
+                throw new \RuntimeException('API error: ' . ($data['error'] ?? 'Unknown error'));
+
+            } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
+                throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
             }
         }
 
         if (!empty($postData)) {
             try {
-
                 $this->logger->info($httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData));
-
                 $response = $client->request($httpMethod, $fullApiUrl, ['json' => $postData]);
                 $statusCode = $response->getStatusCode();
                 $responseData = $response->toArray();
@@ -267,9 +283,7 @@ return;
                     $this->logger->info('Product updated successfully (SKU: ' . $product->getSku() . ')');
                     return;
                 }
-
                 throw new \RuntimeException('API error: ' . ($data['error'] ?? 'Unknown error'));
-
             } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
                 throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
             }
@@ -291,21 +305,13 @@ return;
     {
         $result = [];
 
-        $vat = $product->getVat();
-        $uvpNet = $product->getRecommendedRetailPrice();
-        $uvpGross = $uvpNet * (1 + $vat / 100);
-
-        $result[self::STUECKPREIS][$priceTypes['UPE']] = [
-            "value" => round($uvpGross, 4)
-        ];
-
         // 1) regular prices
         foreach ($product->getPrices() as $priceModel) {
             if ($priceModel->getCustomerGroupId()->getEndpoint() == self::CUSTOMER_TYPE_B2B) {
                 $priceType = $priceTypes[self::CUSTOMER_TYPE_B2B_SHORTCUT];
                 foreach ($priceModel->getItems() as $item) {
                     $result[self::STUECKPREIS][$priceType] = [
-                        "value" => $item->getNetPrice(),
+                        "value" => $item->getNetPrice()
                     ];
                     break;
                 }
@@ -337,5 +343,27 @@ return;
         }
 
         return $result;
+    }
+
+    /*
+ * Convert price data to endpoint format
+ */
+    private function convert(array $inputArray, string $articleNumber, float $taxValue = 19): array
+    {
+        $priceType = array_key_first($inputArray['stueckpreis'] ?? []) ?? '';
+        $priceValue = $inputArray['stueckpreis'][$priceType]['value'] ?? 0;
+
+        $taxKey = array_search($taxValue, self::MAPPING_TAX_CLASSES);
+        if ($taxKey === false) {
+            $taxKey = '1';
+        }
+
+        return [
+            'artikelNr' => $articleNumber,
+            'bezeichnung' => $priceType,
+            'stueckpreis' => $priceValue,
+            'mwSt' => $taxValue,
+            'stSchl' => $taxKey
+        ];
     }
 }
