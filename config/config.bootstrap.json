@@ -1,40 +1,56 @@
 {
+  "log": {
+    "level": "error"
+  },
   "db": {
-    "host": "jtl-connector-db",
+    "host": "jtl-connector-sales-mysql",
     "name": "jtl-connector",
     "username": "jtl-connector",
     "password": "jtl-connector"
   },
   "token": "1234567890",
   "setOrderCustomerNumber": false,
-  "pimcore": {
+  "useGrossPrices": false,
+  "priceTypes": {
+    "UPE": "VKxx - NOT USED!"
+  },
+  "endpoint": {
     "api": {
-      "url": "http://mza-nginx/api/jtl/connector",
-      "key": "1234567890",
+      "url": "https://test-shop-service.mza-vertrieb.de/api",
+      "key": "xxx",
       "endpoints": {
-        "getId": {
-          "method": "GET",
-          "url": "/getId?sku={sku}"
-        },
         "setProductStockLevel": {
           "method": "POST",
-          "url": "/setProductStockLevel"
+          "url": "/artikel/lagerbestand"
         },
         "setProductPrice": {
           "method": "POST",
-          "url": "/setProductPrice"
+          "url": "/transferpreise/CreateOrUpdate"
         },
         "setProductData": {
           "method": "POST",
-          "url": "/setProductData"
+          "url": "/transferpreise/CreateOrUpdate"
         },
-        "getOrders": {
+        "getCustomerOrders": {
           "method": "GET",
-          "url": "/getOrders"
+          "url": "/transferauftraege/pending?auftragsArt=VA"
         },
-        "getCustomers": {
+        "deleteProduct": {
+          "active": false,
+          "method": "POST",
+          "url": "/artikel/delete?auftragsArt=DA"
+        },
+        "getSkuByJtlId": {
+          "active": true,
+          "ignoreMissingSku": true,
           "method": "GET",
-          "url": "/getCustomers"
+          "url": "https://staging.mza.de/api/jtl/connector/getSkuByJtlId?jtlId={jtlId}",
+          "comment": "Fetches SKU by JTL-ID from PIMCORE API",
+          "key": "xxx",
+          "basicAuth": {
+            "username": "mza",
+            "password": "xxx"
+          }
         }
       }
     }
