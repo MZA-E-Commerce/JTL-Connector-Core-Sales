@@ -14,6 +14,7 @@
   "priceTypes": {
     "UPE": "VKxx - NOT USED!"
   },
+  "auftragsArt": "VA",
   "endpoint": {
     "api": {
       "url": "https://test-shop-service.mza-vertrieb.de/api",
@@ -38,7 +39,8 @@
         "deleteProduct": {
           "active": false,
           "method": "POST",
-          "url": "/artikel/delete?auftragsArt=DA"
+          "url": "/transferartikelfreigaben/CreateOrUpdate",
+          "auftragsArt": "VA"
         },
         "getSkuByJtlId": {
           "active": true,
